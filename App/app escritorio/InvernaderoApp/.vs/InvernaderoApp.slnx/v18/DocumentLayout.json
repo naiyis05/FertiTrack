@@ -1,0 +1,153 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\danie\\OneDrive\\Escritorio\\aplicativo\\InvernaderoApp\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{D1F0B2E9-9BA6-63EC-DE5C-0139E47DD9A2}|InvernaderoApp\\InvernaderoApp.csproj|c:\\users\\danie\\onedrive\\escritorio\\aplicativo\\invernaderoapp\\invernaderoapp\\mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
+      "RelativeMoniker": "D:0:0:{D1F0B2E9-9BA6-63EC-DE5C-0139E47DD9A2}|InvernaderoApp\\InvernaderoApp.csproj|solutionrelative:invernaderoapp\\mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D1F0B2E9-9BA6-63EC-DE5C-0139E47DD9A2}|InvernaderoApp\\InvernaderoApp.csproj|c:\\users\\danie\\onedrive\\escritorio\\aplicativo\\invernaderoapp\\invernaderoapp\\mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D1F0B2E9-9BA6-63EC-DE5C-0139E47DD9A2}|InvernaderoApp\\InvernaderoApp.csproj|solutionrelative:invernaderoapp\\mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D1F0B2E9-9BA6-63EC-DE5C-0139E47DD9A2}|InvernaderoApp\\InvernaderoApp.csproj|c:\\users\\danie\\onedrive\\escritorio\\aplicativo\\invernaderoapp\\invernaderoapp\\services\\serialservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D1F0B2E9-9BA6-63EC-DE5C-0139E47DD9A2}|InvernaderoApp\\InvernaderoApp.csproj|solutionrelative:invernaderoapp\\services\\serialservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D1F0B2E9-9BA6-63EC-DE5C-0139E47DD9A2}|InvernaderoApp\\InvernaderoApp.csproj|c:\\users\\danie\\onedrive\\escritorio\\aplicativo\\invernaderoapp\\invernaderoapp\\views\\estilos.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
+      "RelativeMoniker": "D:0:0:{D1F0B2E9-9BA6-63EC-DE5C-0139E47DD9A2}|InvernaderoApp\\InvernaderoApp.csproj|solutionrelative:invernaderoapp\\views\\estilos.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D1F0B2E9-9BA6-63EC-DE5C-0139E47DD9A2}|InvernaderoApp\\InvernaderoApp.csproj|c:\\users\\danie\\onedrive\\escritorio\\aplicativo\\invernaderoapp\\invernaderoapp\\helpers\\humedadanchoconverter.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D1F0B2E9-9BA6-63EC-DE5C-0139E47DD9A2}|InvernaderoApp\\InvernaderoApp.csproj|solutionrelative:invernaderoapp\\helpers\\humedadanchoconverter.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D1F0B2E9-9BA6-63EC-DE5C-0139E47DD9A2}|InvernaderoApp\\InvernaderoApp.csproj|c:\\users\\danie\\onedrive\\escritorio\\aplicativo\\invernaderoapp\\invernaderoapp\\services\\wifiservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D1F0B2E9-9BA6-63EC-DE5C-0139E47DD9A2}|InvernaderoApp\\InvernaderoApp.csproj|solutionrelative:invernaderoapp\\services\\wifiservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D1F0B2E9-9BA6-63EC-DE5C-0139E47DD9A2}|InvernaderoApp\\InvernaderoApp.csproj|c:\\users\\danie\\onedrive\\escritorio\\aplicativo\\invernaderoapp\\invernaderoapp\\models\\sensordata.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D1F0B2E9-9BA6-63EC-DE5C-0139E47DD9A2}|InvernaderoApp\\InvernaderoApp.csproj|solutionrelative:invernaderoapp\\models\\sensordata.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D1F0B2E9-9BA6-63EC-DE5C-0139E47DD9A2}|InvernaderoApp\\InvernaderoApp.csproj|c:\\users\\danie\\onedrive\\escritorio\\aplicativo\\invernaderoapp\\invernaderoapp\\app.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
+      "RelativeMoniker": "D:0:0:{D1F0B2E9-9BA6-63EC-DE5C-0139E47DD9A2}|InvernaderoApp\\InvernaderoApp.csproj|solutionrelative:invernaderoapp\\app.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 100,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 2,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "HumedadAnchoConverter.cs",
+              "DocumentMoniker": "C:\\Users\\danie\\OneDrive\\Escritorio\\aplicativo\\InvernaderoApp\\InvernaderoApp\\Helpers\\HumedadAnchoConverter.cs",
+              "RelativeDocumentMoniker": "InvernaderoApp\\Helpers\\HumedadAnchoConverter.cs",
+              "ToolTip": "C:\\Users\\danie\\OneDrive\\Escritorio\\aplicativo\\InvernaderoApp\\InvernaderoApp\\Helpers\\HumedadAnchoConverter.cs",
+              "RelativeToolTip": "InvernaderoApp\\Helpers\\HumedadAnchoConverter.cs",
+              "ViewState": "AgIAAAkAAAAAAAAAAAAAABcAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-25T00:14:38.714Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "MainWindow.xaml.cs",
+              "DocumentMoniker": "C:\\Users\\danie\\OneDrive\\Escritorio\\aplicativo\\InvernaderoApp\\InvernaderoApp\\MainWindow.xaml.cs",
+              "RelativeDocumentMoniker": "InvernaderoApp\\MainWindow.xaml.cs",
+              "ToolTip": "C:\\Users\\danie\\OneDrive\\Escritorio\\aplicativo\\InvernaderoApp\\InvernaderoApp\\MainWindow.xaml.cs",
+              "RelativeToolTip": "InvernaderoApp\\MainWindow.xaml.cs",
+              "ViewState": "AgIAAAMAAAAAAAAAAAAAAAoAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-25T00:12:43.689Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "MainWindow.xaml",
+              "DocumentMoniker": "C:\\Users\\danie\\OneDrive\\Escritorio\\aplicativo\\InvernaderoApp\\InvernaderoApp\\MainWindow.xaml",
+              "RelativeDocumentMoniker": "InvernaderoApp\\MainWindow.xaml",
+              "ToolTip": "C:\\Users\\danie\\OneDrive\\Escritorio\\aplicativo\\InvernaderoApp\\InvernaderoApp\\MainWindow.xaml",
+              "RelativeToolTip": "InvernaderoApp\\MainWindow.xaml",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
+              "WhenOpened": "2026-05-25T00:12:38.079Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "WiFiService.cs",
+              "DocumentMoniker": "C:\\Users\\danie\\OneDrive\\Escritorio\\aplicativo\\InvernaderoApp\\InvernaderoApp\\Services\\WiFiService.cs",
+              "RelativeDocumentMoniker": "InvernaderoApp\\Services\\WiFiService.cs",
+              "ToolTip": "C:\\Users\\danie\\OneDrive\\Escritorio\\aplicativo\\InvernaderoApp\\InvernaderoApp\\Services\\WiFiService.cs",
+              "RelativeToolTip": "InvernaderoApp\\Services\\WiFiService.cs",
+              "ViewState": "AgIAAAUBAAAAAAAAAADwvx8BAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-22T22:08:02.431Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "SerialService.cs",
+              "DocumentMoniker": "C:\\Users\\danie\\OneDrive\\Escritorio\\aplicativo\\InvernaderoApp\\InvernaderoApp\\Services\\SerialService.cs",
+              "RelativeDocumentMoniker": "InvernaderoApp\\Services\\SerialService.cs",
+              "ToolTip": "C:\\Users\\danie\\OneDrive\\Escritorio\\aplicativo\\InvernaderoApp\\InvernaderoApp\\Services\\SerialService.cs",
+              "RelativeToolTip": "InvernaderoApp\\Services\\SerialService.cs",
+              "ViewState": "AgIAAAYAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-11T23:46:15.389Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "Estilos.xaml",
+              "DocumentMoniker": "C:\\Users\\danie\\OneDrive\\Escritorio\\aplicativo\\InvernaderoApp\\InvernaderoApp\\Views\\Estilos.xaml",
+              "RelativeDocumentMoniker": "InvernaderoApp\\Views\\Estilos.xaml",
+              "ToolTip": "C:\\Users\\danie\\OneDrive\\Escritorio\\aplicativo\\InvernaderoApp\\InvernaderoApp\\Views\\Estilos.xaml",
+              "RelativeToolTip": "InvernaderoApp\\Views\\Estilos.xaml",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
+              "WhenOpened": "2026-04-28T02:54:09.357Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "SensorData.cs",
+              "DocumentMoniker": "C:\\Users\\danie\\OneDrive\\Escritorio\\aplicativo\\InvernaderoApp\\InvernaderoApp\\Models\\SensorData.cs",
+              "RelativeDocumentMoniker": "InvernaderoApp\\Models\\SensorData.cs",
+              "ToolTip": "C:\\Users\\danie\\OneDrive\\Escritorio\\aplicativo\\InvernaderoApp\\InvernaderoApp\\Models\\SensorData.cs",
+              "RelativeToolTip": "InvernaderoApp\\Models\\SensorData.cs",
+              "ViewState": "AgIAAAcAAAAAAAAAAAAwwCwAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-28T02:00:28.598Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "App.xaml",
+              "DocumentMoniker": "C:\\Users\\danie\\OneDrive\\Escritorio\\aplicativo\\InvernaderoApp\\InvernaderoApp\\App.xaml",
+              "RelativeDocumentMoniker": "InvernaderoApp\\App.xaml",
+              "ToolTip": "C:\\Users\\danie\\OneDrive\\Escritorio\\aplicativo\\InvernaderoApp\\InvernaderoApp\\App.xaml",
+              "RelativeToolTip": "InvernaderoApp\\App.xaml",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
+              "WhenOpened": "2026-04-28T02:55:24.115Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

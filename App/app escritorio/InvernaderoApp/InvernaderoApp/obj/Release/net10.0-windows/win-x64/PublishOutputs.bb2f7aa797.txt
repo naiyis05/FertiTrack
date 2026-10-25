@@ -1,0 +1,4 @@
+C:\Users\danie\OneDrive\Escritorio\fertitrack\InvernaderoApp.pdb
+C:\Users\danie\OneDrive\Escritorio\fertitrack\libHarfBuzzSharp.dll
+C:\Users\danie\OneDrive\Escritorio\fertitrack\libSkiaSharp.dll
+C:\Users\danie\OneDrive\Escritorio\fertitrack\InvernaderoApp.exe
