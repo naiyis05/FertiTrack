@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Tema de ventana: Compose dibuja todo; esto solo evita el destello al arrancar. -->
+    <style name="Theme.FertiTrack" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/fondo_ventana</item>
+    </style>
+
+    <color name="fondo_ventana">#F4F8F5</color>
+    <color name="icono_fondo">#16A34A</color>
+</resources>

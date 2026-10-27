@@ -1,0 +1,27 @@
+# Gradle / Android
+.gradle/
+.kotlin/
+build/
+/local.properties
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+captures/
+.externalNativeBuild/
+.cxx/
+*.hprof
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+
+# Claves y firmas: nunca al repositorio
+*.jks
+*.keystore
+
+# Restos de la app anterior y herramientas locales
+node_modules/
+.vite/
+graphify-out/
