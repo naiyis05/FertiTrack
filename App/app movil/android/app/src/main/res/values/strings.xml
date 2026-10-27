@@ -1,7 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources>
-    <string name="app_name">FertiTrack</string>
-    <string name="title_activity_main">FertiTrack</string>
-    <string name="package_name">com.fertitrack.app</string>
-    <string name="custom_url_scheme">com.fertitrack.app</string>
-</resources>
