@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.EventNote
 import androidx.compose.material.icons.automirrored.rounded.ShowChart
@@ -33,6 +34,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -83,7 +85,15 @@ fun PantallaInicio(
     modifier: Modifier = Modifier,
     irAPestana: (Pestana) -> Unit = {},
 ) {
+    // Una falla nueva o la sugerencia de fertilizar aparecen arriba del todo: si la lista
+    // estaba desplazada, sube para que el aviso no quede fuera de la vista.
+    val lista = rememberLazyListState()
+    val sugerir = estado.resumen.sugerirFertilizar
+    LaunchedEffect(estado.falla?.codigo, sugerir) {
+        if (estado.falla != null || sugerir) lista.animateScrollToItem(0)
+    }
     LazyColumn(
+        state = lista,
         modifier = modifier.fillMaxSize().testTag(TAG_PANTALLA_INICIO),
         contentPadding = PaddingValues(MargenPantalla),
         verticalArrangement = Arrangement.spacedBy(SeparacionTarjetas),
