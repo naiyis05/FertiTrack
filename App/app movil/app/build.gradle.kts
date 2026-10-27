@@ -61,6 +61,8 @@ android {
 
     testOptions {
         unitTests.isIncludeAndroidResources = true
+        // Robolectric con SDK 36+ (ApplicationSharedMemory) usa jdk.internal.access en JDK 17+.
+        unitTests.all { it.jvmArgs("--add-opens=java.base/jdk.internal.access=ALL-UNNAMED") }
     }
 }
 
