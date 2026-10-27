@@ -25,3 +25,6 @@ captures/
 node_modules/
 .vite/
 graphify-out/
+
+# Worktrees temporales de desarrollo
+.wt/
