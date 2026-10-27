@@ -1,0 +1,141 @@
+# FertiTrack para Android
+
+App nativa para monitorear y controlar por Wi-Fi el robot monorriel de invernadero
+FertiTrack. Sustituye a la app de escritorio (WPF) y a la app móvil anterior (React/Capacitor).
+
+La app **solo habla con el Maestro** (ESP32): se conecta a su punto de acceso
+`FertiTrack_AP`, consulta `/api/estado` y envía órdenes por HTTP a `192.168.4.1`. El contrato
+HTTP sale de `App/Codigo/Maestro_version5_3.ino`; donde la app de escritorio y el firmware
+difieren, manda el firmware.
+
+## Requisitos
+
+- Android Studio 2026.2 o posterior (trae su propio JDK).
+- Android SDK 37 (Android 17).
+- Teléfono con Android 8.0 (API 26) o superior. No hace falta emulador: se prueba en un
+  celular por USB.
+
+## Configuración
+
+1. Abre la carpeta `App/app movil` en Android Studio (**File → Open**), la que contiene
+   `settings.gradle.kts`.
+2. La clave del AP **no se versiona**. Agrégala a `local.properties` (Android Studio crea el
+   archivo con `sdk.dir`):
+
+   ```properties
+   fertitrack.ap.password=<clave del AP del Maestro>
+   ```
+
+   Sin clave la app funciona igual, pero solo con conexión manual al Wi-Fi.
+3. La IP y el SSID están en `gradle.properties` (`fertitrack.robot.ip`,
+   `fertitrack.ap.ssid`). Si cambias la IP, cambia también
+   `app/src/main/res/xml/network_security_config.xml`, que solo permite HTTP sin TLS a esa
+   dirección.
+
+## Probar en el celular
+
+1. En el teléfono, activa las **opciones de desarrollador**: en *Ajustes → Acerca del
+   teléfono*, toca 7 veces *Número de compilación*.
+2. En las opciones de desarrollador, activa la **depuración USB**. En Xiaomi activa también
+   *Instalar vía USB*.
+3. Conéctalo por cable y acepta *¿Permitir depuración USB?*.
+4. En Android Studio, elige el teléfono y la variante **debug** y pulsa **Run ▶**.
+
+### Sin robot: simulador (solo builds debug)
+
+En la app, abre **Conexión** (el indicador de la barra superior) y activa **Usar robot
+simulado**. Un servidor local dentro de la propia app (`FakeFertiTrackServer`) imita el
+firmware: arranque, ciclos con sensado y riego, fertilización, modo automático, respuestas 409,
+fallas inyectables y pérdidas de conexión. Igual que el robot real, tarda unos 10 s en
+arrancar y recoger los brazos antes de quedar *En espera*, con 300 cm y 6 zonas ya
+configurados. La build release no incluye el simulador.
+
+### Con el robot real
+
+1. Enciende el Maestro y espera a que termine su arranque (recoge los brazos y vuelve al
+   origen).
+2. En **Conexión**:
+   - **Android 10 o superior:** *Conectar al Wi-Fi del robot* y acepta el diálogo de Android.
+     El sistema recuerda la aprobación para ese AP.
+   - **Android 8 y 9**, o si prefieres hacerlo a mano: *Abrir ajustes de Wi-Fi*, elige
+     `FertiTrack_AP` y acepta seguir conectado aunque la red no tenga internet.
+3. **Android 17:** concede el permiso de **Dispositivos cercanos / red local**. Sin él,
+   Android bloquea el tráfico a `192.168.4.1` y el robot aparece como "sin respuesta".
+4. Para probar con el robot usa el **cable USB**. Con la depuración inalámbrica, la PC deja de
+   ver al teléfono en cuanto este se une al Wi-Fi del robot.
+
+Los detalles de red y permisos por versión de Android están en
+[docs/RED_ANDROID.md](docs/RED_ANDROID.md).
+
+## Compilar y probar desde la terminal
+
+```bash
+./gradlew :app:assembleDebug        # APK debug en app/build/outputs/apk/debug/
+./gradlew :app:testDebugUnitTest    # pruebas unitarias y de UI (Robolectric) en la JVM
+./gradlew :app:assembleRelease      # release con R8 (sale sin firmar)
+./gradlew :app:lintDebug
+```
+
+Las pruebas de UI guardan capturas de cada pantalla, en tema claro y oscuro, en
+`app/build/capturas/`.
+
+## Arquitectura
+
+MVVM con `StateFlow`, inyección manual (`di/AppContainer`) y una sola pantalla Compose.
+
+| Paquete | Qué hace |
+|---|---|
+| `config` | IP, SSID, clave (vía `BuildConfig`), intervalos y timeouts. |
+| `domain.modelo` | `EstadoRobot` y enumeraciones del firmware; resultados de órdenes. |
+| `domain.conexion` | Estados de la conexión y de la red Wi-Fi. |
+| `domain.sesion` | `SesionTracker`: eventos, mediciones, riegos y la sugerencia de fertilizar. |
+| `domain.traduccion` | Textos legibles de estados, fallas y resultados. |
+| `domain.analisis` | Análisis automático por reglas (insights). |
+| `data` | Cliente HTTP del Maestro, sondeo con backoff y enlace con la red del AP. |
+| `simulador` | Interfaz del simulador; en `src/debug`, el `FakeFertiTrackServer`. |
+| `ui` | `MainViewModel`, tema, pantallas (Inicio, Zonas, Gráficas, Control, Análisis y Conexión). |
+
+### Reglas de comunicación y seguridad
+
+- **Una petición a la vez:** el servidor del ESP32 atiende de a una y cada petición retrasa su
+  máquina de estados. Hay una sola petición en vuelo, `/api/estado` se consulta cada 1,5 s, el
+  timeout es de 3 s y el sondeo se pausa con la app en segundo plano.
+- **Solo se reintenta `/api/estado`**, con backoff. Ninguna orden que mueva el robot se
+  reintenta sola.
+- **Rutinas solo en espera:** ciclo, sensado, fertilización y activar el automático solo se
+  habilitan en `ESPERANDO`, sin falla y con el recorrido configurado. Un 409 ("sistema
+  ocupado") se muestra como aviso, no como error.
+- **Confirmación explícita** antes de iniciar rutinas, reiniciar y activar el modo automático.
+- **DETENER siempre visible y habilitado.** Las confirmaciones se dibujan dentro de la
+  pantalla, no en otra ventana, para no taparlo. La parada cancela la consulta en curso y se
+  envía de inmediato.
+- **Gráfica por medición:** se registra una muestra por cada medición del robot (al salir de
+  `SENSADO_MIDIENDO`), no una por consulta, porque el robot mide por zona.
+- **Sugerencia de fertilizar:** el firmware no avisa cuando termina un riego. La app lo deduce
+  del paso de `RIEGO` a `NINGUNA` y solo sugiere fertilizar si se regó al menos una zona.
+
+## Dependencias
+
+| Dependencia | Para qué |
+|---|---|
+| Compose BOM, UI, Material 3 y tooling | Interfaz declarativa con Material 3 (el stack pedido). |
+| material-icons-extended | Iconos de pestañas y estados; R8 quita los que no se usan en release. |
+| activity-compose | `setContent` y lanzadores de permisos. |
+| lifecycle-runtime-compose y viewmodel-compose | `collectAsStateWithLifecycle` y `ViewModel` con Factory. |
+| core-ktx | Extensiones de AndroidX (`getSystemService`, comprobación de permisos). |
+| OkHttp | Timeouts, cancelación y `SocketFactory` por red, para salir por el Wi-Fi del robot. |
+| kotlinx.serialization | JSON de `/api/estado` sin reflexión; compatible con R8. |
+| kotlinx-coroutines | Sondeo y órdenes sin bloquear la interfaz. |
+| Vico (compose-m3) | Gráficas nativas de Compose con tema Material 3. MPAndroidChart obligaría a envolver Views. |
+| JUnit 4 y coroutines-test | Pruebas unitarias con tiempo virtual. |
+| Robolectric y compose ui-test | Pruebas de UI y capturas en la JVM, sin emulador. |
+
+## Estado
+
+- **Fase 1:** paridad con la app de escritorio usando el contrato real del firmware.
+- **Fase 2 (pendiente):** configuración del recorrido, calibraciones de distancia y sensor, y
+  mapa de fallas ampliado. La capa de datos ya implementa esas rutas.
+- **Fase 3:** solo a pedido (historial persistente, notificaciones, exportar datos).
+
+Lo que el firmware no ofrece y convendría añadir está en
+[docs/PETICIONES_FIRMWARE.md](docs/PETICIONES_FIRMWARE.md).
