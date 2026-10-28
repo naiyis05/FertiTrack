@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Nombre distinto en el lanzador para no confundirla con la release. -->
+    <string name="app_name">FertiTrack Debug</string>
+</resources>

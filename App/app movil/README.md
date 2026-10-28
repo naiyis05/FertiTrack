@@ -31,6 +31,31 @@ difieren, manda el firmware.
    `fertitrack.ap.ssid`). Si cambias la IP, cambia también
    `app/src/main/res/xml/network_security_config.xml`, que solo permite HTTP sin TLS a esa
    dirección.
+4. Para firmar la release, agrega a `local.properties` el almacén de claves (un `.jks` guardado
+   **fuera del repositorio**):
+
+   ```properties
+   fertitrack.release.storeFile=C:/ruta/fertitrack-release.jks
+   fertitrack.release.storePassword=<clave del almacén>
+   fertitrack.release.keyAlias=fertitrack
+   fertitrack.release.keyPassword=<clave de la llave>
+   ```
+
+   Sin estas líneas, la release se compila sin firmar y Android no la instala. Respalda el
+   `.jks` junto con sus claves: si se pierde, las nuevas versiones no se podrán instalar sobre
+   la anterior.
+
+### Debug y release
+
+| | debug | release |
+|---|---|---|
+| Nombre en el teléfono | FertiTrack Debug | FertiTrack |
+| Id de la app | `com.fertitrack.app.debug` | `com.fertitrack.app` |
+| Simulador | Sí | No: solo funciona con el robot real |
+| Tamaño | ~20 MB | ~1,7 MB (R8 quita código y recursos sin uso) |
+
+Las dos se pueden tener instaladas a la vez. En Android Studio, la variante se elige en
+**Build → Select Build Variant…** (columna *Active Build Variant* del módulo `app`).
 
 ## Probar en el celular
 
@@ -39,7 +64,8 @@ difieren, manda el firmware.
 2. En las opciones de desarrollador, activa la **depuración USB**. En Xiaomi activa también
    *Instalar vía USB*.
 3. Conéctalo por cable y acepta *¿Permitir depuración USB?*.
-4. En Android Studio, elige el teléfono y la variante **debug** y pulsa **Run ▶**.
+4. En Android Studio, elige el teléfono y la variante (**debug** para usar el simulador,
+   **release** para el robot real) y pulsa **Run ▶**.
 
 ### Sin robot: simulador (solo builds debug)
 
@@ -72,7 +98,7 @@ Los detalles de red y permisos por versión de Android están en
 ```bash
 ./gradlew :app:assembleDebug        # APK debug en app/build/outputs/apk/debug/
 ./gradlew :app:testDebugUnitTest    # pruebas unitarias y de UI (Robolectric) en la JVM
-./gradlew :app:assembleRelease      # release con R8 (sale sin firmar)
+./gradlew :app:assembleRelease      # release con R8, firmada si local.properties tiene la firma
 ./gradlew :app:lintDebug
 ```
 

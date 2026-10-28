@@ -22,6 +22,10 @@ fun propiedadRobot(nombre: String, porDefecto: String = ""): String =
 fun literalJava(valor: String): String =
     "\"" + valor.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
 
+// Firma de release: el .jks vive fuera del repositorio y sus datos solo en local.properties.
+// Sin ellos, assembleRelease genera un APK sin firmar (no instalable).
+val almacenFirma: String? = propiedadesLocales.getProperty("fertitrack.release.storeFile")
+
 android {
     namespace = "com.fertitrack.app"
     compileSdk = 37
@@ -38,7 +42,23 @@ android {
         buildConfigField("String", "AP_PASSWORD", literalJava(propiedadRobot("fertitrack.ap.password")))
     }
 
+    signingConfigs {
+        if (almacenFirma != null) {
+            create("release") {
+                storeFile = file(almacenFirma)
+                storePassword = propiedadesLocales.getProperty("fertitrack.release.storePassword")
+                keyAlias = propiedadesLocales.getProperty("fertitrack.release.keyAlias")
+                keyPassword = propiedadesLocales.getProperty("fertitrack.release.keyPassword")
+            }
+        }
+    }
+
     buildTypes {
+        // Id propio para que debug (con simulador) y release convivan en el mismo teléfono.
+        debug {
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
@@ -46,6 +66,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+            if (almacenFirma != null) signingConfig = signingConfigs.getByName("release")
         }
     }
 
