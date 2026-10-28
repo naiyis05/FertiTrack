@@ -34,6 +34,7 @@ import com.fertitrack.app.ui.componentes.FaseDia
 import com.fertitrack.app.ui.componentes.LocalHoraCielo
 import com.fertitrack.app.ui.componentes.TAG_AVISO_RIEGO
 import com.fertitrack.app.ui.componentes.TAG_BOTON_REGAR
+import com.fertitrack.app.ui.componentes.TAG_CIELO
 import com.fertitrack.app.ui.componentes.TAG_OVERLAY_CONFIRMACION
 import com.fertitrack.app.ui.componentes.TAG_VOLVER_HORA_REAL
 import com.fertitrack.app.ui.componentes.tagFaseCielo
@@ -351,6 +352,15 @@ class PruebasPantallas {
         compose.onNodeWithContentDescription("Zona 4: Seca, 21 %, zona actual").assertIsDisplayed()
         compose.onNodeWithContentDescription("Bomba: Activa").assertIsDisplayed()
         compose.onNodeWithContentDescription("Robot: En ruta").assertIsDisplayed()
+    }
+
+    @Test
+    fun zonas_sinDatosDelRobotElCieloYaMuestraLaHora() {
+        // El cielo depende solo del reloj del teléfono, no del robot.
+        mostrar(EstadosMuestra.sinDatos, Pestana.ZONAS)
+        compose.onNodeWithTag(TAG_CIELO).assertIsDisplayed()
+        compose.onNodeWithText("09:41").assertIsDisplayed()
+        compose.onNodeWithText("Mañana").assertIsDisplayed()
     }
 
     @Test
