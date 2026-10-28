@@ -9,6 +9,7 @@ import com.fertitrack.app.domain.modelo.ModoInicio
 import com.fertitrack.app.domain.sesion.ResumenSesion
 import com.fertitrack.app.domain.traduccion.DescripcionEstado
 import com.fertitrack.app.domain.traduccion.DescripcionFalla
+import java.time.LocalDate
 
 enum class Pestana(val titulo: String) {
     INICIO("Inicio"),
@@ -28,6 +29,19 @@ sealed interface AccionConfirmable {
     data object Reiniciar : AccionConfirmable
 
     data class ActivarAuto(val descansoSeg: Long) : AccionConfirmable
+
+    /** No mueve el robot, pero no se puede deshacer. */
+    data object BorrarHistorial : AccionConfirmable
+}
+
+/** Qué se exporta a CSV; [clave] va en el nombre del archivo. */
+enum class TipoExportacion(val clave: String) {
+    MEDICIONES("mediciones"),
+    RIEGOS("riegos"),
+    ;
+
+    /** Nombre sugerido en el selector de archivos: "fertitrack_mediciones_2026-10-28.csv". */
+    fun nombreArchivo(dia: LocalDate): String = "fertitrack_${clave}_$dia.csv"
 }
 
 /** Confirmación pendiente; sus textos ya vienen listos para mostrarse. */

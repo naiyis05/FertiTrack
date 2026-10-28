@@ -130,7 +130,7 @@ private fun TarjetaInvernadero(robot: EstadoRobot, medidas: Map<Int, MuestraHume
         )
         Nota(
             "El color y la planta los da el robot; el porcentaje es la última medición de cada zona " +
-                "en esta sesión. Zonas de ${Formatos.centimetros(robot.anchoZonaCm)}.",
+                "guardada. Zonas de ${Formatos.centimetros(robot.anchoZonaCm)}.",
         )
     }
 }

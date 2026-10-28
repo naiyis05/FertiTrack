@@ -71,7 +71,7 @@ fun PantallaAnalisis(estado: UiState, @Suppress("UNUSED_PARAMETER") acciones: Ac
             Column(verticalArrangement = Arrangement.spacedBy(SeparacionTarjetas)) {
                 Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(SeparacionTarjetas)) {
                     Kpi(
-                        titulo = "Humedad promedio de la sesión",
+                        titulo = "Humedad promedio",
                         valor = Formatos.porcentaje(resumen.humedadPromedio),
                         detalle = if (resumen.humedadPromedio == null) "Sin mediciones" else "de todas las mediciones",
                         icono = Icons.Rounded.Opacity,
@@ -80,7 +80,7 @@ fun PantallaAnalisis(estado: UiState, @Suppress("UNUSED_PARAMETER") acciones: Ac
                     )
                     val interrumpidos = resumen.riegos.count { !it.completado }
                     Kpi(
-                        titulo = "Riegos esta sesión",
+                        titulo = "Riegos completados",
                         valor = resumen.riegosCompletados.toString(),
                         detalle = if (interrumpidos > 0) {
                             "completados · $interrumpidos ${if (interrumpidos == 1) "interrumpido" else "interrumpidos"}"
@@ -128,7 +128,7 @@ fun PantallaAnalisis(estado: UiState, @Suppress("UNUSED_PARAMETER") acciones: Ac
                     EstadoVacio(
                         Icons.Rounded.Lightbulb,
                         "Sin observaciones por ahora",
-                        detalle = "El análisis aparece cuando hay datos del robot y mediciones en la sesión.",
+                        detalle = "El análisis aparece cuando hay datos del robot y mediciones guardadas.",
                     )
                 } else {
                     ResumenSeveridades(estado.insights.map { it.severidad })

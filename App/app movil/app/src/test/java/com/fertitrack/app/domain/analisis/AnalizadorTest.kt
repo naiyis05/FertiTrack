@@ -69,7 +69,7 @@ class AnalizadorTest {
             humedadPromedio = 55f,
         )
         val lista = generar(robot = robot(zonas = List(6) { HUM }, auto = true, proximo = 125), resumen = resumen)
-        assertTrue(lista.any { it.severidad == Severidad.EXITO && it.titulo == "1 riego completado en esta sesión" })
+        assertTrue(lista.any { it.severidad == Severidad.EXITO && it.titulo == "1 riego completado en el historial" })
         assertTrue(lista.any { it.titulo == "Próximo ciclo automático en 2:05" })
     }
 
@@ -83,7 +83,7 @@ class AnalizadorTest {
     @Test
     fun sinMedicionesYTodoEnOrden() {
         val vacia = generar(resumen = ResumenSesion())
-        assertTrue(vacia.any { it.titulo == "Aún no hay mediciones en esta sesión" })
+        assertTrue(vacia.any { it.titulo == "Aún no hay mediciones guardadas" })
         val bien = generar()
         assertTrue(bien.any { it.titulo == "Todo en orden" && it.detalle.contains("70 %") })
     }

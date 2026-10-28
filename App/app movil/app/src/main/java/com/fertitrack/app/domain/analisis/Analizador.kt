@@ -106,10 +106,10 @@ object Analizador {
             val detalle = if (ultimo != null && ultimo.zonasRegadas.isNotEmpty()) {
                 "Último riego: ${contar(ultimo.zonasRegadas.size, "zona", "zonas")} (${unir(ultimo.zonasRegadas)})."
             } else {
-                "Los riegos de esta sesión terminaron sin fallas."
+                "Los riegos registrados terminaron sin fallas."
             }
             lista += Insight(
-                "${contar(resumen.riegosCompletados, "riego completado", "riegos completados")} en esta sesión",
+                "${contar(resumen.riegosCompletados, "riego completado", "riegos completados")} en el historial",
                 detalle,
                 Severidad.EXITO,
             )
@@ -117,7 +117,7 @@ object Analizador {
 
         if (resumen.totalMediciones == 0) {
             lista += Insight(
-                "Aún no hay mediciones en esta sesión",
+                "Aún no hay mediciones guardadas",
                 "Inicia un sensado o un ciclo para ver la humedad de cada zona.",
                 Severidad.INFO,
             )
@@ -126,7 +126,7 @@ object Analizador {
         if (lista.none { it.severidad == Severidad.CRITICO || it.severidad == Severidad.AVISO } &&
             conexion is EstadoConexion.Conectado
         ) {
-            val detalle = resumen.humedadPromedio?.let { "Humedad promedio de la sesión: ${it.roundToInt()} %." }
+            val detalle = resumen.humedadPromedio?.let { "Humedad promedio del historial: ${it.roundToInt()} %." }
                 ?: "El robot está conectado y sin fallas."
             lista += Insight("Todo en orden", detalle, Severidad.EXITO)
         }

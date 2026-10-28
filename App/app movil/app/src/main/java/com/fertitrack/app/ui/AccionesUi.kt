@@ -32,6 +32,9 @@ interface AccionesUi {
 
     fun simularPerdidaConexion(segundos: Int)
 
+    /** Escribe el CSV de [tipo] en [destino] (URI elegida en el selector de archivos). */
+    fun exportar(tipo: TipoExportacion, destino: String)
+
     fun mensajeMostrado(id: Long)
 
     fun alPrimerPlano()

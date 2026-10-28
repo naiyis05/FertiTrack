@@ -8,8 +8,12 @@ import com.fertitrack.app.domain.modelo.ModoRutina
 import com.fertitrack.app.domain.modelo.NivelSuelo
 import com.fertitrack.app.domain.modelo.ResultadoComando
 import com.fertitrack.app.domain.traduccion.Traductor
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlin.math.roundToInt
@@ -39,6 +43,12 @@ class SesionTracker(private val reloj: () -> Long = System::currentTimeMillis) {
 
     private val _resumen = MutableStateFlow(ResumenSesion())
     val resumen: StateFlow<ResumenSesion> = _resumen.asStateFlow()
+
+    // Sin suscriptor (vigilancia apagada) se descartan: solo sirven para notificar al momento.
+    private val _avisos = MutableSharedFlow<AvisoSesion>(extraBufferCapacity = 16, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+
+    /** Fallas, fin de riego, zonas secas y cortes de conexión, para las notificaciones. */
+    val avisos: SharedFlow<AvisoSesion> = _avisos.asSharedFlow()
 
     private var anterior: EstadoRobot? = null
     private var riegoActual: RiegoEnCurso? = null
@@ -113,11 +123,13 @@ class SesionTracker(private val reloj: () -> Long = System::currentTimeMillis) {
                 conexionPerdida -> {
                     conexionPerdida = false
                     agregarEvento(ahora, TipoEvento.CONEXION, "Conexión recuperada")
+                    _avisos.tryEmit(AvisoSesion.ConexionRecuperada)
                 }
             }
             is EstadoConexion.SinRespuesta, is EstadoConexion.Reintentando -> if (huboConexion && !conexionPerdida) {
                 conexionPerdida = true
                 agregarEvento(ahora, TipoEvento.CONEXION, "Se perdió la conexión con el robot")
+                _avisos.tryEmit(AvisoSesion.ConexionPerdida)
             }
             EstadoConexion.Pausado, EstadoConexion.Conectando -> Unit
         }
@@ -147,6 +159,27 @@ class SesionTracker(private val reloj: () -> Long = System::currentTimeMillis) {
         _resumen.update { it.copy(sugerirFertilizar = false) }
     }
 
+    /**
+     * Antepone el historial [guardado] a lo registrado desde que arrancó la app (por si llegó
+     * algún estado antes de terminar de leerlo) y respeta los topes.
+     */
+    @Synchronized
+    fun restaurar(guardado: ResumenSesion) {
+        _resumen.update { actual ->
+            val total = guardado.totalMediciones + actual.totalMediciones
+            sumaHumedad += (guardado.humedadPromedio ?: 0f).toDouble() * guardado.totalMediciones
+            actual.copy(
+                eventos = (actual.eventos + guardado.eventos).take(RobotConfig.MAX_EVENTOS),
+                muestras = (guardado.muestras + actual.muestras).takeLast(RobotConfig.MAX_PUNTOS_GRAFICA),
+                riegos = (guardado.riegos + actual.riegos).takeLast(RobotConfig.MAX_PUNTOS_GRAFICA),
+                bombeos = (guardado.bombeos + actual.bombeos).takeLast(RobotConfig.MAX_EVENTOS),
+                riegosCompletados = guardado.riegosCompletados + actual.riegosCompletados,
+                totalMediciones = total,
+                humedadPromedio = if (total > 0) (sumaHumedad / total).toFloat() else null,
+            )
+        }
+    }
+
     @Synchronized
     fun reiniciarSesion() {
         anterior = null
@@ -164,6 +197,7 @@ class SesionTracker(private val reloj: () -> Long = System::currentTimeMillis) {
         val falla = Traductor.describirFalla(robot.codigoFalla)
         agregarEvento(ahora, TipoEvento.FALLA, "Falla ${falla.codigo}: ${falla.titulo}")
         _resumen.update { it.copy(sugerirFertilizar = false) }
+        _avisos.tryEmit(AvisoSesion.Falla(robot.codigoFalla))
     }
 
     private fun registrarMedicion(ahora: Long, zona: Int?, nuevo: EstadoRobot) {
@@ -208,24 +242,31 @@ class SesionTracker(private val reloj: () -> Long = System::currentTimeMillis) {
                 agregarEvento(ahora, TipoEvento.RUTINA, "Sensado interrumpido")
             } else {
                 agregarEvento(ahora, TipoEvento.RUTINA, "Sensado completado: ${resumenNiveles(nuevo)}")
+                // Solo sensado (sin riego detrás): las zonas secas quedan sin regar.
+                val secas = zonasSecas(nuevo)
+                if (nuevo.modoRutina == ModoRutina.NINGUNA && secas.isNotEmpty()) _avisos.tryEmit(AvisoSesion.ZonasSecas(secas))
             }
             ModoRutina.RIEGO -> {
                 val riego = riegoActual ?: RiegoEnCurso(ahora, zonasSecas(previo))
                 riegoActual = null
                 val registro = RiegoRegistrado(riego.inicioMs, ahora, riego.zonasSecas, completado = !interrumpida)
                 if (interrumpida) {
-                    _resumen.update { it.copy(riegos = it.riegos + registro, sugerirFertilizar = false) }
+                    _resumen.update {
+                        it.copy(riegos = (it.riegos + registro).takeLast(RobotConfig.MAX_PUNTOS_GRAFICA), sugerirFertilizar = false)
+                    }
                     agregarEvento(ahora, TipoEvento.RIEGO, "Riego interrumpido")
+                    _avisos.tryEmit(AvisoSesion.RiegoTerminado(riego.zonasSecas, completado = false, sugerirFertilizar = false))
                 } else {
                     val sugerir = riego.zonasSecas.isNotEmpty() && nuevo.modoRutina == ModoRutina.NINGUNA
                     _resumen.update {
                         it.copy(
-                            riegos = it.riegos + registro,
+                            riegos = (it.riegos + registro).takeLast(RobotConfig.MAX_PUNTOS_GRAFICA),
                             riegosCompletados = it.riegosCompletados + 1,
                             sugerirFertilizar = sugerir,
                         )
                     }
                     agregarEvento(ahora, TipoEvento.RIEGO, "Riego completado${textoZonas(riego.zonasSecas)}")
+                    _avisos.tryEmit(AvisoSesion.RiegoTerminado(riego.zonasSecas, completado = true, sugerirFertilizar = sugerir))
                 }
             }
             ModoRutina.FERTILIZACION -> agregarEvento(

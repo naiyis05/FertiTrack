@@ -1,7 +1,11 @@
 package com.fertitrack.app.ui
 
 import androidx.lifecycle.viewModelScope
+import com.fertitrack.app.data.AlmacenEnMemoria
 import com.fertitrack.app.data.RobotRepository
+import com.fertitrack.app.data.SeguimientoSesion
+import com.fertitrack.app.data.exportar.Exportador
+import com.fertitrack.app.data.historial.FuenteDatos
 import com.fertitrack.app.domain.conexion.EstadoConexion
 import com.fertitrack.app.domain.conexion.EstadoRed
 import com.fertitrack.app.domain.conexion.ModoEnlace
@@ -13,8 +17,10 @@ import com.fertitrack.app.domain.modelo.NivelSuelo
 import com.fertitrack.app.domain.modelo.PuntoCalibracion
 import com.fertitrack.app.domain.modelo.ResultadoComando
 import com.fertitrack.app.domain.robot
+import com.fertitrack.app.domain.sesion.SesionTracker
 import com.fertitrack.app.simulador.Simulador
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
@@ -37,6 +43,10 @@ class MainViewModelTest {
     private lateinit var repo: RepositorioFalso
     private lateinit var simulador: SimuladorFalso
     private lateinit var vm: MainViewModel
+    private lateinit var ambito: CoroutineScope
+    private val almacen = AlmacenEnMemoria()
+    private val exportados = mutableListOf<Pair<String, String>>()
+    private var exportacionCorrecta = true
     private val ui get() = vm.ui.value
 
     @Before
@@ -44,12 +54,19 @@ class MainViewModelTest {
         Dispatchers.setMain(UnconfinedTestDispatcher())
         repo = RepositorioFalso()
         simulador = SimuladorFalso()
-        vm = MainViewModel(repo, simulador, reloj = { 10_000L })
+        ambito = CoroutineScope(Dispatchers.Main)
+        val sesion = SeguimientoSesion(repo, SesionTracker { 10_000L }, almacen, ambito).also { it.iniciar() }
+        val exportador = Exportador { destino, contenido ->
+            exportados += destino to contenido
+            exportacionCorrecta
+        }
+        vm = MainViewModel(repo, simulador, sesion, exportador, reloj = { 10_000L })
     }
 
     @After
     fun limpiar() {
         vm.viewModelScope.cancel()
+        ambito.cancel()
         Dispatchers.resetMain()
     }
 
@@ -244,9 +261,42 @@ class MainViewModelTest {
     }
 
     @Test
+    fun exportarEscribeElCsvYAvisa() {
+        repo.estado.value = robot(EstadoMaquina.SENSADO_MIDIENDO, ModoRutina.SENSADO, zona = 1)
+        repo.estado.value = robot(EstadoMaquina.SENSADO_AVANZANDO, ModoRutina.SENSADO, zona = 2, adc = 2500, pct = 52f)
+        vm.exportar(TipoExportacion.MEDICIONES, "content://descargas/m.csv")
+        val (destino, contenido) = exportados.single()
+        assertEquals("content://descargas/m.csv", destino)
+        assertTrue(contenido.startsWith("﻿Fecha;Hora;Zona;Humedad (%);ADC;Nivel\r\n"))
+        assertTrue(contenido.contains(";1;52,0;2500;Intermedia\r\n"))
+        assertEquals("Archivo guardado: 1 medición", ui.mensaje?.texto)
+
+        vm.mensajeMostrado(ui.mensaje!!.id)
+        exportacionCorrecta = false
+        vm.exportar(TipoExportacion.RIEGOS, "content://descargas/r.csv")
+        assertEquals(TipoMensaje.ERROR, ui.mensaje?.tipo)
+    }
+
+    @Test
+    fun borrarHistorialPideConfirmacionYBorraTambienElArchivo() {
+        assertTrue(ui.resumen.eventos.isNotEmpty())
+        vm.pedirConfirmacion(AccionConfirmable.BorrarHistorial)
+        assertEquals("¿Borrar el historial?", ui.confirmacion?.titulo)
+        assertFalse(ui.confirmacion!!.peligrosa)
+        vm.confirmar()
+        assertNull(ui.confirmacion)
+        assertTrue(ui.resumen.eventos.isEmpty())
+        assertTrue(almacen.guardado.getValue(FuenteDatos.ROBOT).eventos.isEmpty())
+        assertEquals("Historial borrado", ui.mensaje?.texto)
+        // Sin tocar el robot.
+        assertTrue(repo.iniciados.isEmpty())
+    }
+
+    @Test
     fun simuladorYCicloDeVida() {
         vm.usarSimulador(true)
         assertTrue(repo.usandoSimulador.value)
+        assertEquals("Usando el robot simulado", ui.resumen.eventos.first().texto)
         vm.simularFalla(3)
         assertEquals(listOf(3), simulador.fallas)
         vm.alSegundoPlano()

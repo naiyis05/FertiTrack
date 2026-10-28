@@ -58,3 +58,18 @@ data class ResumenSesion(
     /** true tras un ciclo que regó al menos una zona, hasta que el usuario responda. */
     val sugerirFertilizar: Boolean = false,
 )
+
+/** Algo que merece una notificación cuando la app no está a la vista. */
+sealed interface AvisoSesion {
+    data class Falla(val codigo: Int) : AvisoSesion
+
+    /** [zonas]: las que estaban secas al empezar el riego. */
+    data class RiegoTerminado(val zonas: List<Int>, val completado: Boolean, val sugerirFertilizar: Boolean) : AvisoSesion
+
+    /** Un sensado (sin riego detrás) encontró estas zonas secas. */
+    data class ZonasSecas(val zonas: List<Int>) : AvisoSesion
+
+    data object ConexionPerdida : AvisoSesion
+
+    data object ConexionRecuperada : AvisoSesion
+}

@@ -25,6 +25,7 @@ import com.fertitrack.app.ui.Pestana
 import com.fertitrack.app.ui.TAG_FRANJA_DATOS
 import com.fertitrack.app.ui.TAG_FRANJA_PERMISOS
 import com.fertitrack.app.ui.TAG_VOLVER
+import com.fertitrack.app.ui.TipoExportacion
 import com.fertitrack.app.ui.UiState
 import com.fertitrack.app.ui.componentes.TAG_BOTON_CANCELAR
 import com.fertitrack.app.ui.componentes.TAG_BOTON_CONFIRMAR
@@ -424,6 +425,26 @@ class PruebasPantallas {
         compose.onNodeWithText("12 mediciones hasta las", substring = true).assertIsDisplayed()
         compose.onNodeWithTag(tagRango(RangoGrafica.SEIS_HORAS)).performClick()
         compose.onNodeWithText("13 mediciones hasta las", substring = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun graficas_historialSePuedeExportarYBorrar() {
+        mostrar(EstadosMuestra.conectadoEspera, Pestana.GRAFICAS)
+        compose.onNodeWithTag(TAG_PANTALLA_GRAFICAS).performScrollToNode(hasTestTag(TAG_TARJETA_HISTORIAL))
+        compose.onNodeWithText("12 mediciones · 3 riegos · 9 eventos").assertIsDisplayed()
+        compose.onNodeWithTag(tagExportar(TipoExportacion.MEDICIONES)).assertIsEnabled()
+        compose.onNodeWithTag(tagExportar(TipoExportacion.RIEGOS)).assertIsEnabled()
+        compose.onNodeWithTag(TAG_BORRAR_HISTORIAL).assertIsEnabled().performClick()
+        assertEquals(listOf<AccionConfirmable>(AccionConfirmable.BorrarHistorial), acciones.confirmacionesPedidas)
+    }
+
+    @Test
+    fun graficas_sinHistorialNoHayNadaQueExportarNiBorrar() {
+        mostrar(EstadosMuestra.sinDatos, Pestana.GRAFICAS)
+        compose.onNodeWithTag(TAG_PANTALLA_GRAFICAS).performScrollToNode(hasTestTag(TAG_TARJETA_HISTORIAL))
+        compose.onNodeWithTag(tagExportar(TipoExportacion.MEDICIONES)).assertIsNotEnabled()
+        compose.onNodeWithTag(tagExportar(TipoExportacion.RIEGOS)).assertIsNotEnabled()
+        compose.onNodeWithTag(TAG_BORRAR_HISTORIAL).assertIsNotEnabled()
     }
 
     @Test

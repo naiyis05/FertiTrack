@@ -3,6 +3,11 @@ package com.fertitrack.app.di
 import android.content.Context
 import com.fertitrack.app.data.RobotRepository
 import com.fertitrack.app.data.RobotRepositoryImpl
+import com.fertitrack.app.data.SeguimientoSesion
+import com.fertitrack.app.data.exportar.Exportador
+import com.fertitrack.app.data.exportar.ExportadorAndroid
+import com.fertitrack.app.data.historial.AlmacenHistorialArchivo
+import com.fertitrack.app.domain.sesion.SesionTracker
 import com.fertitrack.app.data.red.EnlaceRed
 import com.fertitrack.app.data.red.EnlaceRedAndroid
 import com.fertitrack.app.data.remote.ClienteMaestroHttp
@@ -30,4 +35,14 @@ class AppContainer(contexto: Context) {
         simulador = simulador,
         ambito = ambitoApp,
     )
+
+    /** Historial: se alimenta y se guarda mientras viva el proceso, con o sin pantalla. */
+    val seguimiento = SeguimientoSesion(
+        repositorio = repositorio,
+        tracker = SesionTracker(),
+        almacen = AlmacenHistorialArchivo(contexto.filesDir),
+        ambito = ambitoApp,
+    ).also { it.iniciar() }
+
+    val exportador: Exportador = ExportadorAndroid(contexto)
 }

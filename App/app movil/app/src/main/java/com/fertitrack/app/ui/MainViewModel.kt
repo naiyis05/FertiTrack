@@ -8,6 +8,9 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.fertitrack.app.FertiTrackApp
 import com.fertitrack.app.data.RobotRepository
+import com.fertitrack.app.data.SeguimientoSesion
+import com.fertitrack.app.data.exportar.Csv
+import com.fertitrack.app.data.exportar.Exportador
 import com.fertitrack.app.domain.analisis.Analizador
 import com.fertitrack.app.domain.conexion.EstadoConexion
 import com.fertitrack.app.domain.conexion.EstadoRed
@@ -28,7 +31,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -36,15 +38,19 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 /**
- * Une repositorio, sesión y análisis en un único [UiState] y aplica las reglas
- * de seguridad antes de enviar cualquier orden.
+ * Une repositorio, historial y análisis en un único [UiState] y aplica las reglas
+ * de seguridad antes de enviar cualquier orden. El historial lo alimenta [sesion], que vive
+ * con el proceso: este ViewModel solo lo lee y registra las órdenes.
  */
 class MainViewModel(
     private val repositorio: RobotRepository,
     private val simulador: Simulador,
-    private val tracker: SesionTracker = SesionTracker(),
+    private val sesion: SeguimientoSesion,
+    private val exportador: Exportador,
     private val reloj: () -> Long = System::currentTimeMillis,
 ) : ViewModel(), AccionesUi {
+
+    private val tracker: SesionTracker get() = sesion.tracker
 
     /** Estado propio de la interfaz que no viene del robot. */
     private data class Interno(
@@ -88,11 +94,6 @@ class MainViewModel(
         SharingStarted.Eagerly,
         UiState(simuladorDisponible = repositorio.simuladorDisponible),
     )
-
-    init {
-        viewModelScope.launch { repositorio.estado.filterNotNull().collect { tracker.procesarEstado(it) } }
-        viewModelScope.launch { repositorio.conexion.collect { tracker.procesarConexion(it) } }
-    }
 
     // ── Construcción del estado ─────────────────────────────────────────────
 
@@ -138,6 +139,8 @@ class MainViewModel(
 
     /** null si [accion] se puede enviar ahora; si no, el motivo. Se calcula con los valores más recientes. */
     private fun motivoNoPermitida(accion: AccionConfirmable): String? {
+        // Borrar el historial no habla con el robot: siempre se puede.
+        if (accion == AccionConfirmable.BorrarHistorial) return null
         val robot = repositorio.estado.value
         val conexion = repositorio.conexion.value
         if (interno.value.comandoEnCurso != null) return "Espera: hay otra orden en curso"
@@ -155,6 +158,7 @@ class MainViewModel(
                 robot.estado != EstadoMaquina.EMERGENCIA -> "Reiniciar solo se usa después de una emergencia"
                 else -> null
             }
+            AccionConfirmable.BorrarHistorial -> null
         }
     }
 
@@ -195,6 +199,16 @@ class MainViewModel(
                     "Puedes desactivarlo en cualquier momento.",
                 "Activar", peligrosa = true,
             )
+            AccionConfirmable.BorrarHistorial -> {
+                val r = tracker.resumen.value
+                Confirmacion(
+                    accion, "¿Borrar el historial?",
+                    "Se borrarán del teléfono ${r.muestras.size} mediciones, ${r.bombeos.size} riegos y los " +
+                        "eventos guardados. No se puede deshacer; si los necesitas, expórtalos antes. " +
+                        "El robot no se ve afectado.",
+                    "Borrar", peligrosa = false,
+                )
+            }
         }
     }
 
@@ -217,6 +231,7 @@ class MainViewModel(
         AccionConfirmable.FertilizarTrasRiego -> "Iniciar fertilización"
         AccionConfirmable.Reiniciar -> "Reiniciar sistema"
         is AccionConfirmable.ActivarAuto -> "Activar modo automático"
+        AccionConfirmable.BorrarHistorial -> "Borrar historial"
     }
 
     // ── Acciones ────────────────────────────────────────────────────────────
@@ -239,6 +254,12 @@ class MainViewModel(
             mostrar("No se envió la orden: $motivo", TipoMensaje.AVISO)
             return
         }
+        if (accion == AccionConfirmable.BorrarHistorial) {
+            interno.update { it.copy(confirmacion = null) }
+            sesion.borrarHistorial()
+            mostrar("Historial borrado", TipoMensaje.EXITO)
+            return
+        }
         val descripcion = descripcionDe(accion)
         interno.update { it.copy(confirmacion = null, comandoEnCurso = descripcion) }
         viewModelScope.launch {
@@ -248,6 +269,7 @@ class MainViewModel(
                     AccionConfirmable.FertilizarTrasRiego -> repositorio.iniciar(ModoInicio.FERTILIZAR)
                     AccionConfirmable.Reiniciar -> repositorio.reiniciar()
                     is AccionConfirmable.ActivarAuto -> repositorio.configurarAuto(true, accion.descansoSeg)
+                    AccionConfirmable.BorrarHistorial -> error("Se resuelve antes, sin el robot")
                 }
             }
             val esFertilizacion = accion == AccionConfirmable.FertilizarTrasRiego ||
@@ -325,14 +347,10 @@ class MainViewModel(
 
     override fun permisosActualizados() = repositorio.reevaluarRed()
 
+    /** El cambio de historial (y su evento) lo hace [SeguimientoSesion] al ver el cambio de fuente. */
     override fun usarSimulador(activo: Boolean) {
         if (activo == repositorio.usandoSimulador.value) return
         repositorio.usarSimulador(activo)
-        tracker.reiniciarSesion()
-        tracker.registrarEvento(
-            TipoEvento.AVISO,
-            if (activo) "Usando el robot simulado" else "Usando el robot real",
-        )
     }
 
     override fun simularFalla(codigo: Int) {
@@ -349,6 +367,23 @@ class MainViewModel(
             return
         }
         simulador.simularPerdidaConexion(segundos)
+    }
+
+    override fun exportar(tipo: TipoExportacion, destino: String) {
+        val resumen = tracker.resumen.value
+        val (contenido, texto) = when (tipo) {
+            TipoExportacion.MEDICIONES -> Csv.mediciones(resumen.muestras) to
+                "${resumen.muestras.size} ${if (resumen.muestras.size == 1) "medición" else "mediciones"}"
+            TipoExportacion.RIEGOS -> Csv.riegos(resumen.bombeos) to
+                "${resumen.bombeos.size} ${if (resumen.bombeos.size == 1) "riego" else "riegos"}"
+        }
+        viewModelScope.launch {
+            if (exportador.escribir(destino, contenido)) {
+                mostrar("Archivo guardado: $texto", TipoMensaje.EXITO)
+            } else {
+                mostrar("No se pudo guardar el archivo. Prueba con otra carpeta.", TipoMensaje.ERROR)
+            }
+        }
     }
 
     override fun mensajeMostrado(id: Long) {
@@ -411,7 +446,12 @@ class MainViewModel(
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 val app = this[APPLICATION_KEY] as FertiTrackApp
-                MainViewModel(app.contenedor.repositorio, app.contenedor.simulador)
+                MainViewModel(
+                    app.contenedor.repositorio,
+                    app.contenedor.simulador,
+                    app.contenedor.seguimiento,
+                    app.contenedor.exportador,
+                )
             }
         }
     }

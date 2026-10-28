@@ -8,12 +8,18 @@ import com.fertitrack.app.domain.modelo.ModoRutina
 import com.fertitrack.app.domain.modelo.NivelSuelo
 import com.fertitrack.app.domain.modelo.ResultadoComando
 import com.fertitrack.app.domain.robot
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class SesionTrackerTest {
 
     private var ahora = 1_000L
@@ -203,6 +209,61 @@ class SesionTrackerTest {
         assertEquals("Iniciar ciclo completo: robot ocupado", r.eventos.first().texto)
         paso(robot(auto = true, descanso = 120))
         assertEquals("Modo automático activado (descanso de 120 s)", r.eventos.first().texto)
+    }
+
+    @Test
+    fun restaurarAnteponeLoGuardadoYRecalculaElPromedio() {
+        sensadoDosZonas(SECA, HUM, 15f, 70f) // 2 mediciones nuevas: promedio 42,5
+        val vieja = MuestraHumedad(1L, zona = 3, humedadPct = 90f, adc = 1400, nivel = NivelSuelo.SOBRE_HUMEDA)
+        tracker.restaurar(
+            ResumenSesion(
+                eventos = listOf(EventoSesion(1L, TipoEvento.CONEXION, "Conectado al robot")),
+                muestras = listOf(vieja),
+                riegosCompletados = 4,
+                totalMediciones = 1,
+                humedadPromedio = 90f,
+            ),
+        )
+        assertEquals(listOf(90f, 15f, 70f), r.muestras.map { it.humedadPct })
+        assertEquals(3, r.totalMediciones)
+        assertEquals(58.33f, r.humedadPromedio!!, 0.01f)
+        assertEquals(4, r.riegosCompletados)
+        // Los eventos guardados van detrás de los nuevos (más reciente primero).
+        assertEquals("Conectado al robot", r.eventos.last().texto)
+        // Las mediciones siguientes promedian con todo lo anterior.
+        paso(robot(EstadoMaquina.SENSADO_MIDIENDO, ModoRutina.SENSADO, zona = 1, totalZonas = 2))
+        paso(robot(EstadoMaquina.SENSADO_AVANZANDO, ModoRutina.SENSADO, zona = 2, totalZonas = 2, adc = 2000, pct = 25f))
+        assertEquals(50f, r.humedadPromedio!!, 0.01f)
+    }
+
+    @Test
+    fun emiteAvisosDeFallaRiegoZonasSecasYConexion() = runTest {
+        val avisos = mutableListOf<AvisoSesion>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { tracker.avisos.toList(avisos) }
+
+        // Solo sensado con una zona seca: aviso de zonas secas.
+        sensadoDosZonas(SECA, HUM, 15f, 70f)
+        paso(robot(totalZonas = 2, zonas = listOf(SECA, HUM), adc = 2000, pct = 70f))
+        // Un riego completo que sugiere fertilizar.
+        val zonas = listOf(SECA, HUM)
+        paso(robot(EstadoMaquina.RIEGO_AVANZANDO, ModoRutina.RIEGO, zona = 1, totalZonas = 2, zonas = zonas, actividad = Actividad.REGANDO))
+        paso(robot(totalZonas = 2, zonas = zonas))
+        // Una falla y un corte de conexión con su recuperación.
+        paso(robot(EstadoMaquina.EMERGENCIA, totalZonas = 2, zonas = zonas, falla = 8))
+        tracker.procesarConexion(EstadoConexion.Conectado)
+        tracker.procesarConexion(EstadoConexion.SinRespuesta(1, "sin respuesta"))
+        tracker.procesarConexion(EstadoConexion.Conectado)
+
+        assertEquals(
+            listOf(
+                AvisoSesion.ZonasSecas(listOf(1)),
+                AvisoSesion.RiegoTerminado(listOf(1), completado = true, sugerirFertilizar = true),
+                AvisoSesion.Falla(8),
+                AvisoSesion.ConexionPerdida,
+                AvisoSesion.ConexionRecuperada,
+            ),
+            avisos,
+        )
     }
 
     @Test

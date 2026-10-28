@@ -14,6 +14,7 @@ object Formatos {
 
     private val formatoHora: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss")
     private val formatoHoraCorta: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+    private val formatoFechaHoraCorta: DateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM HH:mm")
 
     /** "47 %" (sin decimales, como la página del Maestro) o "—". */
     fun porcentaje(valor: Float?): String =
@@ -35,6 +36,10 @@ object Formatos {
 
     fun horaCorta(momentoMs: Long, zona: ZoneId = ZoneId.systemDefault()): String =
         formatoHoraCorta.format(Instant.ofEpochMilli(momentoMs).atZone(zona))
+
+    /** "27/10 10:30". */
+    fun fechaHoraCorta(momentoMs: Long, zona: ZoneId = ZoneId.systemDefault()): String =
+        formatoFechaHoraCorta.format(Instant.ofEpochMilli(momentoMs).atZone(zona))
 
     /** Cuenta atrás "m:ss" (o "h:mm:ss" desde una hora). */
     fun cuentaAtras(segundos: Long): String {
