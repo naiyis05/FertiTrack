@@ -1,6 +1,7 @@
 package com.fertitrack.app.ui.pantallas
 
 import android.app.Application
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
@@ -13,8 +14,11 @@ import androidx.compose.ui.test.onRoot
 import com.fertitrack.app.ui.FertiTrackPantalla
 import com.fertitrack.app.ui.Pestana
 import com.fertitrack.app.ui.UiState
+import com.fertitrack.app.ui.componentes.FaseDia
+import com.fertitrack.app.ui.componentes.LocalHoraCielo
 import com.fertitrack.app.ui.tema.FertiTrackTema
 import java.awt.image.BufferedImage
+import java.time.LocalDateTime
 import java.io.File
 import javax.imageio.ImageIO
 import org.junit.Assert.assertTrue
@@ -43,6 +47,8 @@ class CapturasPantallas {
         val estado: UiState,
         val pestana: Pestana = Pestana.INICIO,
         val conexion: Boolean = false,
+        /** Hora del cielo de Zonas. */
+        val hora: LocalDateTime = LocalDateTime.of(2026, 10, 27, 9, 41),
     )
 
     private val principales = listOf(
@@ -68,8 +74,18 @@ class CapturasPantallas {
         Escena("conexion_simulador", EstadosMuestra.simulador, conexion = true),
     )
 
+    /** El cielo de Zonas en cada fase del día (a la hora de muestra de cada una). */
+    private val fasesCielo = FaseDia.entries.map { fase ->
+        Escena(
+            "zonas_cielo_${fase.name.lowercase()}",
+            EstadosMuestra.riegoEnCurso,
+            Pestana.ZONAS,
+            hora = LocalDateTime.of(2026, 10, 27, fase.minutoMuestra / 60, fase.minutoMuestra % 60),
+        )
+    }
+
     @Test
-    fun capturasTemaClaro() = capturar(principales + adicionales, oscuro = false)
+    fun capturasTemaClaro() = capturar(principales + adicionales + fasesCielo, oscuro = false)
 
     @Test
     fun capturasTemaOscuro() = capturar(
@@ -83,14 +99,16 @@ class CapturasPantallas {
         compose.setContent {
             // key: cada escena empieza de cero (pestaña inicial, scroll, mensajes).
             key(actual.nombre) {
-                FertiTrackTema(oscuro = oscuro) {
-                    FertiTrackPantalla(
-                        actual.estado,
-                        acciones,
-                        Modifier,
-                        pestanaInicial = actual.pestana,
-                        conexionInicial = actual.conexion,
-                    )
+                CompositionLocalProvider(LocalHoraCielo provides actual.hora) {
+                    FertiTrackTema(oscuro = oscuro) {
+                        FertiTrackPantalla(
+                            actual.estado,
+                            acciones,
+                            Modifier,
+                            pestanaInicial = actual.pestana,
+                            conexionInicial = actual.conexion,
+                        )
+                    }
                 }
             }
         }

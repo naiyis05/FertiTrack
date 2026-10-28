@@ -100,31 +100,6 @@ fun MuestraNivel(nivel: NivelSuelo, modifier: Modifier = Modifier) {
     )
 }
 
-/** Leyenda con los rangos reales de la calibración actual. */
-@Composable
-fun LeyendaNiveles(calibracion: CalibracionSensor, modifier: Modifier = Modifier) {
-    Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        (NivelesMedidos + NivelSuelo.SIN_MEDIR).forEach { nivel ->
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.heightIn(min = 24.dp)) {
-                MuestraNivel(nivel)
-                Spacer(Modifier.width(10.dp))
-                Text(
-                    Traductor.nombreNivel(nivel),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.width(112.dp),
-                )
-                Text(
-                    rangoNivel(nivel, calibracion),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.weight(1f),
-                )
-            }
-        }
-    }
-}
-
 /** Cuántas zonas hay en cada nivel (incluye "Sin medir"; ignora códigos desconocidos si no hay). */
 fun conteoPorNivel(zonas: List<NivelSuelo>): Map<NivelSuelo, Int> {
     val conteo = zonas.groupingBy { it }.eachCount()

@@ -13,6 +13,7 @@ import com.fertitrack.app.domain.modelo.ModoInicio
 import com.fertitrack.app.domain.modelo.ModoRutina
 import com.fertitrack.app.domain.modelo.NivelSuelo
 import com.fertitrack.app.domain.modelo.TipoFalla
+import com.fertitrack.app.domain.sesion.BombeoRiego
 import com.fertitrack.app.domain.sesion.EventoSesion
 import com.fertitrack.app.domain.sesion.MuestraHumedad
 import com.fertitrack.app.domain.sesion.ResumenSesion
@@ -174,10 +175,17 @@ object EstadosMuestra {
         RiegoRegistrado(min(9), min(9, 35), listOf(2), completado = false),
     )
 
+    val bombeos: List<BombeoRiego> = listOf(
+        BombeoRiego(listOf(1), min(3), min(3, 12), interrumpido = false),
+        BombeoRiego(listOf(4), min(6), min(6, 18), interrumpido = false),
+        BombeoRiego(listOf(2), min(9, 20), min(9, 35), interrumpido = true),
+    )
+
     val resumenCompleto = ResumenSesion(
         eventos = eventos,
         muestras = muestras,
         riegos = riegos,
+        bombeos = bombeos,
         riegosCompletados = 1,
         totalMediciones = 12,
         humedadPromedio = 49.2f,

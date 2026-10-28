@@ -46,15 +46,16 @@ import com.patrykandpatrick.vico.compose.common.ProvideVicoTheme
 import com.patrykandpatrick.vico.compose.common.component.rememberLineComponent
 import com.patrykandpatrick.vico.compose.common.component.rememberShapeComponent
 import com.patrykandpatrick.vico.compose.common.component.rememberTextComponent
+import com.patrykandpatrick.vico.compose.common.data.ExtraStore
 import com.patrykandpatrick.vico.compose.m3.common.rememberM3VicoTheme
 import kotlin.math.roundToInt
 
 const val TAG_GRAFICA_HUMEDAD = "grafica_humedad"
 
 /**
- * Humedad (0–100 %) de las últimas mediciones del robot, una muestra por medición.
- * Con [calibracion] dibuja las líneas de umbral de SECA y HÚMEDA.
- * [compacta] quita las etiquetas de umbral (mini gráfica de Inicio).
+ * Humedad (0–100 %) de las últimas mediciones del robot, una muestra por medición: línea
+ * con área y solo el último punto marcado. Con [calibracion] dibuja las líneas de umbral de
+ * SECA y HÚMEDA. [compacta] quita las etiquetas de umbral (mini gráfica de Inicio).
  */
 @Composable
 fun GraficaHumedad(
@@ -63,12 +64,13 @@ fun GraficaHumedad(
     modifier: Modifier = Modifier,
     altoArea: Dp = 200.dp,
     compacta: Boolean = false,
+    tituloVacio: String = "Todavía no hay mediciones",
 ) {
     val ultimas = remember(muestras) { muestras.takeLast(RobotConfig.MAX_PUNTOS_GRAFICA) }
     if (ultimas.isEmpty()) {
         EstadoVacio(
             icono = Icons.AutoMirrored.Rounded.ShowChart,
-            titulo = "Todavía no hay mediciones",
+            titulo = tituloVacio,
             detalle = "La gráfica se llena cuando el robot mide la humedad de una zona.",
             modifier = modifier,
         )
@@ -76,7 +78,7 @@ fun GraficaHumedad(
     }
 
     val colores = FertiTrackTema.colores
-    val colorLinea = colores.agua.acento
+    val colorLinea = colores.exito.acento
     val colorTexto = MaterialTheme.colorScheme.onSurfaceVariant
     val colorGuia = MaterialTheme.colorScheme.outlineVariant
 
@@ -88,10 +90,16 @@ fun GraficaHumedad(
         )
     }
 
-    val componentePunto = rememberShapeComponent(fill = Fill(colorLinea), shape = CircleShape)
-    val puntos = remember(componentePunto, compacta) {
-        LineCartesianLayer.PointProvider.single(
-            LineCartesianLayer.Point(componentePunto, size = if (compacta) 6.dp else 8.dp),
+    val componentePunto = rememberShapeComponent(
+        fill = Fill(colorLinea),
+        shape = CircleShape,
+        strokeFill = Fill(colores.tarjeta),
+        strokeThickness = 2.dp,
+    )
+    val puntos = remember(componentePunto, compacta, ultimas) {
+        SoloUltimoPunto(
+            LineCartesianLayer.Point(componentePunto, size = if (compacta) 10.dp else 13.dp),
+            ultimoX = ultimas.lastIndex.toDouble(),
         )
     }
     val linea = LineCartesianLayer.rememberLine(
@@ -122,11 +130,14 @@ fun GraficaHumedad(
             ultimas.getOrNull(x.roundToInt())?.let { Formatos.horaCorta(it.momentoMs) } ?: " "
         }
     }
+    // Unas 4 horas en el eje, con 3 puntos o con 300.
+    val espaciado = (ultimas.size + 3) / 4
     val ejeX = HorizontalAxis.rememberBottom(
         line = rememberAxisLineComponent(fill = Fill(colorGuia)),
         label = rememberAxisLabelComponent(style = estiloEtiqueta),
         guideline = null,
         valueFormatter = formatoHora,
+        itemPlacer = remember(espaciado) { HorizontalAxis.ItemPlacer.aligned(spacing = { espaciado.coerceAtLeast(1) }) },
     )
 
     val decoraciones = if (calibracion == null) {
@@ -138,9 +149,10 @@ fun GraficaHumedad(
                 color = colores.peligro.acento,
                 etiqueta = if (compacta) null else "Seca < ${calibracion.pctSeca} %",
             ),
+            // Neutra: la serie ya es verde y la línea se confundiría con ella.
             lineaUmbral(
                 y = calibracion.pctHumeda.toDouble(),
-                color = colores.exito.acento,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 etiqueta = if (compacta) null else "Húmeda ≥ ${calibracion.pctHumeda} %",
             ),
         )
@@ -171,6 +183,17 @@ fun GraficaHumedad(
                 .semantics { contentDescription = descripcion },
         )
     }
+}
+
+/** Marca solo el punto más reciente (x = [ultimoX]), como un "ahora" sobre la línea. */
+private class SoloUltimoPunto(
+    private val punto: LineCartesianLayer.Point,
+    private val ultimoX: Double,
+) : LineCartesianLayer.PointProvider {
+    override fun getPoint(entry: LineCartesianLayerModel.Entry, extraStore: ExtraStore): LineCartesianLayer.Point? =
+        if (entry.x == ultimoX) punto else null
+
+    override fun getLargestPoint(extraStore: ExtraStore): LineCartesianLayer.Point = punto
 }
 
 @Composable

@@ -1,53 +1,90 @@
 package com.fertitrack.app.ui.pantallas
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.EventNote
-import androidx.compose.material.icons.automirrored.rounded.ShowChart
-import androidx.compose.material.icons.rounded.CheckCircle
-import androidx.compose.material.icons.rounded.Cancel
 import androidx.compose.material.icons.rounded.WaterDrop
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.fertitrack.app.domain.sesion.RiegoRegistrado
+import androidx.compose.ui.unit.sp
+import com.fertitrack.app.domain.conexion.EstadoConexion
+import com.fertitrack.app.domain.modelo.NivelSuelo
+import com.fertitrack.app.domain.sesion.BombeoRiego
+import com.fertitrack.app.domain.sesion.MuestraHumedad
+import com.fertitrack.app.domain.sesion.ResumenSesion
+import com.fertitrack.app.domain.traduccion.Traductor
 import com.fertitrack.app.ui.AccionesUi
 import com.fertitrack.app.ui.UiState
 import com.fertitrack.app.ui.componentes.EstadoVacio
 import com.fertitrack.app.ui.componentes.FilaEvento
 import com.fertitrack.app.ui.componentes.Formatos
 import com.fertitrack.app.ui.componentes.GraficaHumedad
+import com.fertitrack.app.ui.componentes.LeyendaTanque
 import com.fertitrack.app.ui.componentes.MargenPantalla
 import com.fertitrack.app.ui.componentes.Nota
+import com.fertitrack.app.ui.componentes.PildoraEnVivo
 import com.fertitrack.app.ui.componentes.SeparacionTarjetas
+import com.fertitrack.app.ui.componentes.TanqueHumedad
 import com.fertitrack.app.ui.componentes.TarjetaFertiTrack
+import com.fertitrack.app.ui.componentes.TextoAdc
+import com.fertitrack.app.ui.componentes.nivelDePorcentaje
 import com.fertitrack.app.ui.tema.FertiTrackTema
 
 const val TAG_PANTALLA_GRAFICAS = "pantalla_graficas"
+const val TAG_EVENTOS_RIEGO = "eventos_riego"
+fun tagRango(rango: RangoGrafica): String = "rango_${rango.name}"
 
-/** Gráficas: humedad por medición, historial de riegos y registro de eventos de la sesión. */
+/** Ventanas de la tendencia; terminan en la medición más reciente. */
+enum class RangoGrafica(val etiqueta: String, val descripcion: String, val duracionMs: Long) {
+    HORA("1 h", "la última hora", 3_600_000L),
+    SEIS_HORAS("6 h", "las últimas 6 horas", 6 * 3_600_000L),
+    DIA("24 h", "las últimas 24 horas", 24 * 3_600_000L),
+}
+
+/**
+ * Mediciones de las [rango] que terminan en la más reciente. Se ancla en la última medición y
+ * no en el reloj: sin conexión la gráfica sigue mostrando lo último medido, con sus horas.
+ */
+internal fun muestrasEnRango(muestras: List<MuestraHumedad>, rango: RangoGrafica): List<MuestraHumedad> {
+    val fin = muestras.maxOfOrNull { it.momentoMs } ?: return emptyList()
+    return muestras.filter { it.momentoMs >= fin - rango.duracionMs }
+}
+
+/** Gráficas: tanque con la humedad actual, tendencia por ventana, riegos por zona y eventos. */
 @Composable
 fun PantallaGraficas(estado: UiState, @Suppress("UNUSED_PARAMETER") acciones: AccionesUi, modifier: Modifier = Modifier) {
     val resumen = estado.resumen
@@ -56,39 +93,9 @@ fun PantallaGraficas(estado: UiState, @Suppress("UNUSED_PARAMETER") acciones: Ac
         contentPadding = PaddingValues(MargenPantalla),
         verticalArrangement = Arrangement.spacedBy(SeparacionTarjetas),
     ) {
-        item("grafica") {
-            TarjetaFertiTrack(titulo = "Humedad del suelo", icono = Icons.AutoMirrored.Rounded.ShowChart) {
-                GraficaHumedad(
-                    muestras = resumen.muestras,
-                    calibracion = estado.robot?.calibracion,
-                    altoArea = 220.dp,
-                )
-                if (resumen.muestras.isNotEmpty()) {
-                    Text(
-                        "${resumen.muestras.size} de ${resumen.totalMediciones.coerceAtLeast(resumen.muestras.size)} " +
-                            "mediciones de la sesión",
-                        style = MaterialTheme.typography.labelLarge,
-                    )
-                }
-                Nota("Se registra una muestra por medición del robot, no por consulta.")
-            }
-        }
-        item("riegos") {
-            TarjetaFertiTrack(titulo = "Historial de riegos", icono = Icons.Rounded.WaterDrop) {
-                if (resumen.riegos.isEmpty()) {
-                    EstadoVacio(
-                        Icons.Rounded.WaterDrop,
-                        "Sin riegos en esta sesión",
-                        detalle = "Aparecen aquí cuando un ciclo encuentra zonas secas y las riega.",
-                    )
-                } else {
-                    resumen.riegos.asReversed().forEachIndexed { i, riego ->
-                        if (i > 0) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                        FilaRiego(riego)
-                    }
-                }
-            }
-        }
+        item("tanque") { TarjetaTanque(estado) }
+        item("tendencia") { TarjetaTendencia(resumen.muestras, estado) }
+        item("riegos") { TarjetaEventosRiego(resumen) }
         item("eventos") {
             TarjetaFertiTrack(titulo = "Eventos de la sesión", icono = Icons.AutoMirrored.Rounded.EventNote) {
                 if (resumen.eventos.isEmpty()) {
@@ -110,60 +117,209 @@ fun PantallaGraficas(estado: UiState, @Suppress("UNUSED_PARAMETER") acciones: Ac
 }
 
 @Composable
-private fun FilaRiego(riego: RiegoRegistrado) {
+private fun TarjetaTanque(estado: UiState) {
+    val robot = estado.robot
+    val ultima = estado.resumen.muestras.lastOrNull()
+    // Sin lectura actual (robot sin datos o sensor sin medir), la última de la sesión.
+    val pct = robot?.humedadPct ?: ultima?.humedadPct
+    val adc = robot?.humedadAdc ?: ultima?.adc
+    val calibracion = robot?.calibracion
+    val nivel = when {
+        pct == null -> NivelSuelo.SIN_MEDIR
+        robot?.humedadPct != null && robot.nivelSuelo in NIVELES_CON_DATO -> robot.nivelSuelo
+        calibracion != null -> nivelDePorcentaje(pct, calibracion)
+        else -> ultima?.nivel ?: NivelSuelo.SIN_MEDIR
+    }
+    val enVivo = estado.conexion == EstadoConexion.Conectado && !estado.datosObsoletos && robot?.humedadPct != null
+
+    TarjetaFertiTrack {
+        BoxWithConstraints(Modifier.fillMaxWidth()) {
+            val anchoTanque = if (maxWidth >= 520.dp) 150.dp else 116.dp
+            val altoTanque = if (maxWidth >= 520.dp) 236.dp else 208.dp
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                TanqueHumedad(
+                    pct = pct,
+                    nivel = nivel,
+                    marcas = calibracion?.let { listOf(it.pctSeca, it.pctHumeda, it.pctSobre) }.orEmpty(),
+                    modifier = Modifier.size(width = anchoTanque, height = altoTanque),
+                )
+                Spacer(Modifier.width(20.dp))
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        "TANQUE DE HUMEDAD",
+                        style = MaterialTheme.typography.labelMedium,
+                        letterSpacing = 1.2.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    PildoraEnVivo(enVivo)
+                    Text(
+                        if (pct == null) "Sin lectura" else tituloNivel(nivel),
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    if (calibracion != null) {
+                        LeyendaTanque(actual = nivel.takeIf { pct != null }, calibracion = calibracion)
+                    }
+                    TextoAdc(adc)
+                    if (robot?.humedadPct == null && ultima != null) {
+                        Nota("Última medición de la sesión, a las ${Formatos.horaCorta(ultima.momentoMs)}.")
+                    }
+                }
+            }
+        }
+    }
+}
+
+private val NIVELES_CON_DATO = setOf(NivelSuelo.SECA, NivelSuelo.INTERMEDIA, NivelSuelo.HUMEDA, NivelSuelo.SOBRE_HUMEDA)
+
+/** Título del tanque ("Suelo seco", "Nivel intermedio"…): los nombres de nivel son femeninos. */
+private fun tituloNivel(nivel: NivelSuelo): String = when (nivel) {
+    NivelSuelo.SECA -> "Suelo seco"
+    NivelSuelo.INTERMEDIA -> "Nivel intermedio"
+    NivelSuelo.HUMEDA -> "Suelo húmedo"
+    NivelSuelo.SOBRE_HUMEDA -> "Suelo sobre-húmedo"
+    NivelSuelo.SIN_MEDIR, NivelSuelo.DESCONOCIDO -> Traductor.nombreNivel(nivel)
+}
+
+@Composable
+private fun TarjetaTendencia(muestras: List<MuestraHumedad>, estado: UiState) {
+    var rango by rememberSaveable { mutableStateOf(RangoGrafica.HORA) }
+    val visibles = remember(muestras, rango) { muestrasEnRango(muestras, rango) }
+    // Sin icono: así el título y el selector caben en una línea en un teléfono.
+    TarjetaFertiTrack(
+        titulo = "Tendencia de humedad",
+        acciones = { SelectorRango(rango, onElegir = { rango = it }) },
+    ) {
+        GraficaHumedad(
+            muestras = visibles,
+            calibracion = estado.robot?.calibracion,
+            altoArea = 220.dp,
+            tituloVacio = "Sin mediciones en ${rango.descripcion}",
+        )
+        if (visibles.isNotEmpty()) {
+            Nota(
+                "${visibles.size} ${if (visibles.size == 1) "medición" else "mediciones"} hasta las " +
+                    "${Formatos.horaCorta(visibles.last().momentoMs)}. Una muestra por medición del robot, " +
+                    "no por consulta.",
+            )
+        }
+    }
+}
+
+/** Control segmentado 1 h · 6 h · 24 h. */
+@Composable
+private fun SelectorRango(elegido: RangoGrafica, onElegir: (RangoGrafica) -> Unit) {
+    Row(
+        Modifier
+            .clip(RoundedCornerShape(14.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            .padding(3.dp)
+            .selectableGroup(),
+    ) {
+        RangoGrafica.entries.forEach { rango ->
+            val activo = rango == elegido
+            Box(
+                Modifier
+                    .heightIn(min = 40.dp)
+                    .clip(RoundedCornerShape(11.dp))
+                    .background(if (activo) FertiTrackTema.colores.tarjeta else MaterialTheme.colorScheme.surfaceContainerHigh)
+                    .selectable(selected = activo, role = Role.Tab, onClick = { onElegir(rango) })
+                    .padding(horizontal = 12.dp)
+                    .testTag(tagRango(rango)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    rango.etiqueta,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = if (activo) FontWeight.Bold else FontWeight.Medium,
+                    color = if (activo) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun TarjetaEventosRiego(resumen: ResumenSesion) {
+    val bombeos = resumen.bombeos
+    TarjetaFertiTrack(
+        modifier = Modifier.testTag(TAG_EVENTOS_RIEGO),
+        titulo = "Eventos de riego",
+        icono = Icons.Rounded.WaterDrop,
+        acciones = {
+            if (bombeos.isNotEmpty()) {
+                Text(
+                    "${bombeos.size} ${if (bombeos.size == 1) "riego" else "riegos"}",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        },
+    ) {
+        if (bombeos.isEmpty()) {
+            EstadoVacio(
+                Icons.Rounded.WaterDrop,
+                "Sin riegos en esta sesión",
+                detalle = "Aparecen aquí, zona por zona, cuando un ciclo encuentra zonas secas y las riega.",
+            )
+            return@TarjetaFertiTrack
+        }
+        bombeos.asReversed().forEachIndexed { i, bombeo ->
+            if (i > 0) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            FilaBombeo(bombeo)
+        }
+        val completos = resumen.riegos.count { it.completado }
+        val interrumpidos = resumen.riegos.size - completos
+        Nota(
+            buildString {
+                append("Duración aproximada (±1,5 s). ")
+                append("$completos ${if (completos == 1) "riego completado" else "riegos completados"}")
+                if (interrumpidos > 0) append(", $interrumpidos interrumpido${if (interrumpidos == 1) "" else "s"}")
+                append(" en esta sesión.")
+            },
+        )
+    }
+}
+
+@Composable
+private fun FilaBombeo(bombeo: BombeoRiego) {
     val colores = FertiTrackTema.colores
-    val tono = if (riego.completado) colores.exito else colores.aviso
+    val zonas = when (bombeo.zonas.size) {
+        0 -> "Zona sin identificar"
+        1 -> "Zona ${bombeo.zonas.first()}"
+        else -> "Zonas ${bombeo.zonas.first()}–${bombeo.zonas.last()}"
+    }
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 56.dp)
+            .heightIn(min = 60.dp)
             .semantics(mergeDescendants = true) {},
     ) {
-        Surface(shape = CircleShape, color = colores.agua.contenedor, modifier = Modifier.size(36.dp)) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    Icons.Rounded.WaterDrop,
-                    contentDescription = null,
-                    tint = colores.agua.acento,
-                    modifier = Modifier.size(20.dp),
-                )
-            }
+        Surface(shape = RoundedCornerShape(14.dp), color = colores.agua.contenedor, modifier = Modifier.size(44.dp)) {
+            Box(contentAlignment = Alignment.Center) { Text("🚿", fontSize = 20.sp) }
         }
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f).padding(vertical = 6.dp)) {
+            Text(zonas, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.height(2.dp))
             Text(
-                "${Formatos.horaCorta(riego.inicioMs)} – ${Formatos.horaCorta(riego.finMs)}" +
-                    " · ${Formatos.duracion(riego.finMs - riego.inicioMs)}",
-                style = MaterialTheme.typography.titleSmall,
-            )
-            Text(
-                when (riego.zonasRegadas.size) {
-                    0 -> "Sin zonas secas registradas"
-                    1 -> "Zona regada: ${Formatos.listaZonas(riego.zonasRegadas)}"
-                    else -> "Zonas regadas: ${Formatos.listaZonas(riego.zonasRegadas)}"
-                },
+                "${Formatos.horaCorta(bombeo.inicioMs)} · ≈ ${Formatos.duracion(bombeo.finMs - bombeo.inicioMs)} de bomba",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        Spacer(Modifier.width(8.dp))
-        Surface(shape = MaterialTheme.shapes.small, color = tono.contenedor, contentColor = tono.sobreContenedor) {
-            Row(
-                Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
+        if (bombeo.interrumpido) {
+            Surface(
+                shape = MaterialTheme.shapes.small,
+                color = colores.aviso.contenedor,
+                contentColor = colores.aviso.sobreContenedor,
             ) {
-                Icon(
-                    if (riego.completado) Icons.Rounded.CheckCircle else Icons.Rounded.Cancel,
-                    contentDescription = null,
-                    tint = tono.acento,
-                    modifier = Modifier.size(16.dp),
-                )
-                Spacer(Modifier.width(4.dp))
                 Text(
-                    if (riego.completado) "Completado" else "Interrumpido",
+                    "Interrumpido",
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                 )
             }
         }

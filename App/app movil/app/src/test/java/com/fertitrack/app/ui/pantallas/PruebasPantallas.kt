@@ -2,6 +2,7 @@ package com.fertitrack.app.ui.pantallas
 
 import android.app.Application
 import androidx.activity.ComponentActivity
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
@@ -29,9 +30,16 @@ import com.fertitrack.app.ui.componentes.TAG_BOTON_CANCELAR
 import com.fertitrack.app.ui.componentes.TAG_BOTON_CONFIRMAR
 import com.fertitrack.app.ui.componentes.TAG_BOTON_DETENER
 import com.fertitrack.app.ui.componentes.TAG_CHIP_CONEXION
+import com.fertitrack.app.ui.componentes.FaseDia
+import com.fertitrack.app.ui.componentes.LocalHoraCielo
+import com.fertitrack.app.ui.componentes.TAG_AVISO_RIEGO
+import com.fertitrack.app.ui.componentes.TAG_BOTON_REGAR
 import com.fertitrack.app.ui.componentes.TAG_OVERLAY_CONFIRMACION
+import com.fertitrack.app.ui.componentes.TAG_VOLVER_HORA_REAL
+import com.fertitrack.app.ui.componentes.tagFaseCielo
 import com.fertitrack.app.ui.tagPestana
 import com.fertitrack.app.ui.tema.FertiTrackTema
+import java.time.LocalDateTime
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -58,11 +66,18 @@ class PruebasPantallas {
         oscuro: Boolean = false,
     ) {
         compose.setContent {
-            FertiTrackTema(oscuro = oscuro) {
-                FertiTrackPantalla(estado, acciones, Modifier, pestanaInicial = pestana, conexionInicial = conexion)
+            CompositionLocalProvider(LocalHoraCielo provides HORA_PRUEBA) {
+                FertiTrackTema(oscuro = oscuro) {
+                    FertiTrackPantalla(estado, acciones, Modifier, pestanaInicial = pestana, conexionInicial = conexion)
+                }
             }
         }
         compose.waitForIdle()
+    }
+
+    private companion object {
+        /** El cielo de Zonas siempre a la misma hora: martes 27 de octubre, 9:41 (mañana). */
+        val HORA_PRUEBA: LocalDateTime = LocalDateTime.of(2026, 10, 27, 9, 41)
     }
 
     private fun detenerVisibleYHabilitado() {
@@ -320,8 +335,94 @@ class PruebasPantallas {
     fun zonas_150ZonasSeDibujan() {
         mostrar(EstadosMuestra.zonas150, Pestana.ZONAS)
         compose.onNodeWithContentDescription("Riel con 150 zonas", substring = true).assertIsDisplayed()
-        compose.onNodeWithContentDescription("Zona 150: Sin medir").assertExists()
+        // La fila de zonas se desplaza sola hasta la zona actual.
+        compose.onNodeWithContentDescription("Zona 87: Intermedia, zona actual").assertIsDisplayed()
         recorrerLista(TAG_PANTALLA_ZONAS)
         detenerVisibleYHabilitado()
+    }
+
+    // 5. Zonas rediseñada: cielo, tarjetas de zona y Regar.
+
+    @Test
+    fun zonas_tarjetasConPorcentajeMedidoYZonaActual() {
+        mostrar(EstadosMuestra.riegoEnCurso, Pestana.ZONAS)
+        // Con 6 zonas en 411 dp la fila se desplaza hasta la actual (la 4, seca, medida al 21 %).
+        compose.onNodeWithContentDescription("Zona 3: Húmeda, 69 %").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Zona 4: Seca, 21 %, zona actual").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Bomba: Activa").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Robot: En ruta").assertIsDisplayed()
+    }
+
+    @Test
+    fun zonas_cieloMuestraLaHoraYPrevisualizaOtraFase() {
+        mostrar(EstadosMuestra.conectadoEspera, Pestana.ZONAS)
+        compose.onNodeWithText("09:41").assertIsDisplayed()
+        compose.onNodeWithText("Martes 27 de octubre").assertIsDisplayed()
+        compose.onNodeWithText("Mañana").assertIsDisplayed()
+        compose.onNodeWithTag(TAG_VOLVER_HORA_REAL).assertDoesNotExist()
+
+        compose.onNodeWithTag(tagFaseCielo(FaseDia.ATARDECER)).performClick()
+        compose.onNodeWithText("Atardecer").assertIsDisplayed()
+        compose.onNodeWithText("09:41").assertIsDisplayed()
+        compose.onNodeWithTag(TAG_VOLVER_HORA_REAL).assertIsDisplayed().performClick()
+        compose.onNodeWithText("Mañana").assertIsDisplayed()
+    }
+
+    @Test
+    fun zonas_regarPideConfirmarUnCiclo() {
+        mostrar(EstadosMuestra.conectadoEspera, Pestana.ZONAS)
+        compose.onNodeWithTag(TAG_PANTALLA_ZONAS).performScrollToNode(hasTestTag(TAG_AVISO_RIEGO))
+        compose.onNodeWithText("Zonas 1 y 4 necesitan riego").assertIsDisplayed()
+        compose.onNodeWithTag(TAG_BOTON_REGAR).assertIsEnabled().performClick()
+        assertEquals(listOf<AccionConfirmable>(AccionConfirmable.Iniciar(ModoInicio.CICLO)), acciones.confirmacionesPedidas)
+    }
+
+    @Test
+    fun zonas_regarDeshabilitadoConMotivoSinConexion() {
+        mostrar(EstadosMuestra.datosObsoletos(), Pestana.ZONAS)
+        compose.onNodeWithTag(TAG_PANTALLA_ZONAS).performScrollToNode(hasTestTag(TAG_AVISO_RIEGO))
+        compose.onNodeWithTag(TAG_BOTON_REGAR).assertIsNotEnabled()
+        compose.onNodeWithText("Sin conexión con el robot").assertIsDisplayed()
+    }
+
+    @Test
+    fun zonas_duranteElRiegoNoHayBotonRegar() {
+        mostrar(EstadosMuestra.riegoEnCurso, Pestana.ZONAS)
+        compose.onNodeWithTag(TAG_PANTALLA_ZONAS).performScrollToNode(hasTestTag(TAG_AVISO_RIEGO))
+        compose.onNodeWithText("El ciclo en curso las está regando.").assertIsDisplayed()
+        compose.onNodeWithTag(TAG_BOTON_REGAR).assertDoesNotExist()
+    }
+
+    // 6. Gráficas rediseñada: tanque, rangos y riegos por zona.
+
+    @Test
+    fun graficas_tanqueConNivelYLeyenda() {
+        mostrar(EstadosMuestra.conectadoEspera, Pestana.GRAFICAS)
+        compose.onNodeWithContentDescription("Tanque de humedad al 47 %, Intermedia").assertIsDisplayed()
+        compose.onNodeWithText("Nivel intermedio").assertIsDisplayed()
+        compose.onNodeWithText("EN VIVO").assertIsDisplayed()
+        compose.onNodeWithText("Valor ADC 2354").assertIsDisplayed()
+    }
+
+    @Test
+    fun graficas_elRangoFiltraLaTendencia() {
+        val vieja = EstadosMuestra.muestras.first().let { it.copy(momentoMs = it.momentoMs - 3 * 3_600_000L) }
+        val estado = EstadosMuestra.conectadoEspera.copy(
+            resumen = EstadosMuestra.resumenCompleto.copy(muestras = listOf(vieja) + EstadosMuestra.muestras),
+        )
+        mostrar(estado, Pestana.GRAFICAS)
+        compose.onNodeWithText("12 mediciones hasta las", substring = true).assertIsDisplayed()
+        compose.onNodeWithTag(tagRango(RangoGrafica.SEIS_HORAS)).performClick()
+        compose.onNodeWithText("13 mediciones hasta las", substring = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun graficas_riegosPorZonaConDuracion() {
+        mostrar(EstadosMuestra.conectadoEspera, Pestana.GRAFICAS)
+        compose.onNodeWithTag(TAG_PANTALLA_GRAFICAS).performScrollToNode(hasTestTag(TAG_EVENTOS_RIEGO))
+        compose.onNodeWithText("3 riegos").assertIsDisplayed()
+        compose.onNodeWithText("Zona 4").assertIsDisplayed()
+        compose.onNodeWithText("≈ 18 s de bomba", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("Interrumpido").assertIsDisplayed()
     }
 }
