@@ -26,7 +26,10 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    /** El sondeo solo corre con la app visible (regla 6: nada de consultas en segundo plano). */
+    /**
+     * El sondeo corre con la app visible; en segundo plano solo si el usuario encendió la
+     * vigilancia (regla 6: nada de consultas en segundo plano sin pedirlo).
+     */
     override fun onStart() {
         super.onStart()
         viewModel.alPrimerPlano()

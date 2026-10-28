@@ -11,6 +11,7 @@ import org.junit.Test
 class CsvTest {
 
     private val utc = ZoneOffset.UTC
+    private val BOM = Char(0xFEFF)
     private fun ms(h: Int, m: Int, s: Int = 0) = LocalDateTime.of(2026, 10, 28, h, m, s).toInstant(utc).toEpochMilli()
 
     @Test
@@ -23,7 +24,7 @@ class CsvTest {
             utc,
         )
         assertEquals(
-            "﻿Fecha;Hora;Zona;Humedad (%);ADC;Nivel\r\n" +
+            "${BOM}Fecha;Hora;Zona;Humedad (%);ADC;Nivel\r\n" +
                 "2026-10-28;09:41:05;3;47,3;2873;Intermedia\r\n" +
                 "2026-10-28;09:45:00;Prueba de sensor;88,0;1500;Sobre-húmeda\r\n",
             csv,
@@ -40,7 +41,7 @@ class CsvTest {
             utc,
         )
         assertEquals(
-            "﻿Fecha;Inicio;Fin;Duración (s);Zonas;Estado\r\n" +
+            "${BOM}Fecha;Inicio;Fin;Duración (s);Zonas;Estado\r\n" +
                 "2026-10-28;10:00:00;10:00:12;12;2 3;Completado\r\n" +
                 "2026-10-28;10:05:00;10:05:04;4;5;Interrumpido\r\n",
             csv,
@@ -49,6 +50,6 @@ class CsvTest {
 
     @Test
     fun sinDatosSoloLaCabecera() {
-        assertEquals("﻿Fecha;Hora;Zona;Humedad (%);ADC;Nivel\r\n", Csv.mediciones(emptyList(), utc))
+        assertEquals("${BOM}Fecha;Hora;Zona;Humedad (%);ADC;Nivel\r\n", Csv.mediciones(emptyList(), utc))
     }
 }

@@ -32,6 +32,9 @@ interface AccionesUi {
 
     fun simularPerdidaConexion(segundos: Int)
 
+    /** Enciende o apaga la vigilancia en segundo plano (servicio con notificación fija). */
+    fun activarVigilancia(activa: Boolean)
+
     /** Escribe el CSV de [tipo] en [destino] (URI elegida en el selector de archivos). */
     fun exportar(tipo: TipoExportacion, destino: String)
 

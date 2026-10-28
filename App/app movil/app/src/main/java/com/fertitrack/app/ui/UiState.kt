@@ -100,4 +100,7 @@ data class UiState(
     val claveConfigurada: Boolean = RobotConfig.CLAVE_AP.isNotEmpty(),
     val simuladorDisponible: Boolean = false,
     val usandoSimulador: Boolean = false,
+
+    /** Vigilancia en segundo plano encendida por el usuario (sondeo y avisos con la app cerrada). */
+    val vigilanciaActiva: Boolean = false,
 )

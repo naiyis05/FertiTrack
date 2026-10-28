@@ -376,7 +376,11 @@ private fun TarjetaHistorial(resumen: ResumenSesion, acciones: AccionesUi) {
         icono = Icons.Rounded.History,
     ) {
         Text(
-            "${resumen.muestras.size} mediciones · ${resumen.bombeos.size} riegos · ${resumen.eventos.size} eventos",
+            listOf(
+                contar(resumen.muestras.size, "medición", "mediciones"),
+                contar(resumen.bombeos.size, "riego", "riegos"),
+                contar(resumen.eventos.size, "evento", "eventos"),
+            ).joinToString(" · "),
             style = MaterialTheme.typography.titleSmall,
         )
         Nota(
@@ -418,3 +422,5 @@ private fun TarjetaHistorial(resumen: ResumenSesion, acciones: AccionesUi) {
         }
     }
 }
+
+private fun contar(n: Int, singular: String, plural: String): String = "$n ${if (n == 1) singular else plural}"

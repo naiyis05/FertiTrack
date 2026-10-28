@@ -2,6 +2,7 @@ package com.fertitrack.app.di
 
 import android.content.Context
 import com.fertitrack.app.data.RobotRepository
+import com.fertitrack.app.data.ControlSondeo
 import com.fertitrack.app.data.RobotRepositoryImpl
 import com.fertitrack.app.data.SeguimientoSesion
 import com.fertitrack.app.data.exportar.Exportador
@@ -14,6 +15,9 @@ import com.fertitrack.app.data.remote.ClienteMaestroHttp
 import com.fertitrack.app.data.remote.MaestroApi
 import com.fertitrack.app.simulador.ProveedorSimulador
 import com.fertitrack.app.simulador.Simulador
+import com.fertitrack.app.vigilancia.Notificador
+import com.fertitrack.app.vigilancia.Vigilancia
+import com.fertitrack.app.vigilancia.VigilanciaAndroid
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -45,4 +49,11 @@ class AppContainer(contexto: Context) {
     ).also { it.iniciar() }
 
     val exportador: Exportador = ExportadorAndroid(contexto)
+
+    /** Sondeo con la app a la vista o con la vigilancia en segundo plano encendida. */
+    val controlSondeo = ControlSondeo(repositorio)
+
+    val vigilancia: Vigilancia = VigilanciaAndroid(contexto)
+
+    val notificador = Notificador(contexto)
 }

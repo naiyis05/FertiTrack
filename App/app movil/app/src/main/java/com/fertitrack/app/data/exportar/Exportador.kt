@@ -1,7 +1,7 @@
 package com.fertitrack.app.data.exportar
 
 import android.content.Context
-import android.net.Uri
+import androidx.core.net.toUri
 import java.io.IOException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -19,7 +19,7 @@ class ExportadorAndroid(contexto: Context) : Exportador {
     override suspend fun escribir(destino: String, contenido: String): Boolean = withContext(Dispatchers.IO) {
         try {
             // "wt": reemplaza el contenido si el usuario eligió un archivo existente.
-            resolver.openOutputStream(Uri.parse(destino), "wt")?.use { it.write(contenido.toByteArray(Charsets.UTF_8)) } != null
+            resolver.openOutputStream(destino.toUri(), "wt")?.use { it.write(contenido.toByteArray(Charsets.UTF_8)) } != null
         } catch (e: IOException) {
             false
         } catch (e: SecurityException) {

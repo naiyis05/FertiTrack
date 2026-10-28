@@ -1,7 +1,10 @@
 package com.fertitrack.app.ui.pantallas
 
+import android.Manifest
 import android.content.ActivityNotFoundException
+import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
@@ -24,6 +27,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.BugReport
+import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material.icons.rounded.Router
 import androidx.compose.material.icons.rounded.Security
 import androidx.compose.material.icons.rounded.Settings
@@ -43,6 +47,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -57,6 +62,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import com.fertitrack.app.config.RobotConfig
 import com.fertitrack.app.domain.conexion.EstadoConexion
 import com.fertitrack.app.domain.conexion.EstadoRed
@@ -147,6 +153,9 @@ fun PantallaConexion(estado: UiState, acciones: AccionesUi, modifier: Modifier =
         }
         item("red") { TarjetaRed(estado) }
         item("wifi") { TarjetaConectarWifi(estado, onConectar = acciones::conectarWifiRobot, onAbrirAjustes = abrirAjustesWifi) }
+        item("vigilancia") {
+            TarjetaVigilancia(activa = estado.vigilanciaActiva, onCambiar = acciones::activarVigilancia, onAbrirAjustesApp = abrirAjustesApp)
+        }
         if (estado.simuladorDisponible) {
             item("debug") { TarjetaSimulador(estado, acciones) }
         }
@@ -459,5 +468,73 @@ private fun BotonSimulacion(
         modifier = modifier.heightIn(min = 52.dp).testTag(tag),
     ) {
         Text(texto, textAlign = TextAlign.Center, style = MaterialTheme.typography.labelLarge)
+    }
+}
+
+const val TAG_TARJETA_VIGILANCIA = "tarjeta_vigilancia"
+const val TAG_SWITCH_VIGILANCIA = "switch_vigilancia"
+
+private fun permisoNotificaciones(contexto: Context): Boolean =
+    Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+        ContextCompat.checkSelfPermission(contexto, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+
+/**
+ * Vigilancia en segundo plano: apagada por defecto. Al encenderla en Android 13+ se pide antes
+ * el permiso de notificaciones; si se niega, la vigilancia funciona igual (guarda el historial)
+ * pero sin avisos.
+ */
+@Composable
+private fun TarjetaVigilancia(activa: Boolean, onCambiar: (Boolean) -> Unit, onAbrirAjustesApp: () -> Unit) {
+    val contexto = LocalContext.current
+    var conPermiso by remember { mutableStateOf(permisoNotificaciones(contexto)) }
+    val pedirPermiso = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { concedido ->
+        conPermiso = concedido
+        onCambiar(true)
+    }
+    val tono = FertiTrackTema.colores.aviso
+    TarjetaFertiTrack(
+        modifier = Modifier.testTag(TAG_TARJETA_VIGILANCIA),
+        titulo = "Avisos en segundo plano",
+        icono = Icons.Rounded.NotificationsActive,
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text("Vigilar el robot con la app cerrada", style = MaterialTheme.typography.titleSmall)
+                Text(
+                    "Avisa de fallas, fin de riego, zonas secas y cortes de conexión, y sigue guardando el historial.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Spacer(Modifier.width(12.dp))
+            Switch(
+                checked = activa,
+                onCheckedChange = { encender ->
+                    if (encender && !conPermiso && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        pedirPermiso.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    } else {
+                        onCambiar(encender)
+                    }
+                },
+                modifier = Modifier
+                    .testTag(TAG_SWITCH_VIGILANCIA)
+                    .semantics { contentDescription = "Vigilar el robot con la app cerrada" },
+            )
+        }
+        Nota(
+            "Mientras vigila, la app consulta al robot cada 1,5 s aunque la pantalla esté apagada y deja " +
+                "una notificación fija: gasta más batería. Apágala cuando no la necesites.",
+        )
+        if (activa && !conPermiso) {
+            Text(
+                "Sin permiso de notificaciones: el historial se sigue guardando, pero no verás los avisos.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = tono.acento,
+                fontWeight = FontWeight.SemiBold,
+            )
+            OutlinedButton(onClick = onAbrirAjustesApp, modifier = Modifier.heightIn(min = 48.dp)) {
+                Text("Abrir ajustes de la app")
+            }
+        }
     }
 }

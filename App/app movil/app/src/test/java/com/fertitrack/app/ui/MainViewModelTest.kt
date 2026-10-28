@@ -2,6 +2,7 @@ package com.fertitrack.app.ui
 
 import androidx.lifecycle.viewModelScope
 import com.fertitrack.app.data.AlmacenEnMemoria
+import com.fertitrack.app.data.ControlSondeo
 import com.fertitrack.app.data.RobotRepository
 import com.fertitrack.app.data.SeguimientoSesion
 import com.fertitrack.app.data.exportar.Exportador
@@ -19,6 +20,7 @@ import com.fertitrack.app.domain.modelo.ResultadoComando
 import com.fertitrack.app.domain.robot
 import com.fertitrack.app.domain.sesion.SesionTracker
 import com.fertitrack.app.simulador.Simulador
+import com.fertitrack.app.vigilancia.Vigilancia
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -47,7 +49,10 @@ class MainViewModelTest {
     private val almacen = AlmacenEnMemoria()
     private val exportados = mutableListOf<Pair<String, String>>()
     private var exportacionCorrecta = true
+    private lateinit var controlSondeo: ControlSondeo
+    private val vigilancia = VigilanciaFalsa()
     private val ui get() = vm.ui.value
+    private val BOM = Char(0xFEFF)
 
     @Before
     fun preparar() {
@@ -60,7 +65,8 @@ class MainViewModelTest {
             exportados += destino to contenido
             exportacionCorrecta
         }
-        vm = MainViewModel(repo, simulador, sesion, exportador, reloj = { 10_000L })
+        controlSondeo = ControlSondeo(repo)
+        vm = MainViewModel(repo, simulador, sesion, exportador, controlSondeo, vigilancia, reloj = { 10_000L })
     }
 
     @After
@@ -267,7 +273,7 @@ class MainViewModelTest {
         vm.exportar(TipoExportacion.MEDICIONES, "content://descargas/m.csv")
         val (destino, contenido) = exportados.single()
         assertEquals("content://descargas/m.csv", destino)
-        assertTrue(contenido.startsWith("﻿Fecha;Hora;Zona;Humedad (%);ADC;Nivel\r\n"))
+        assertTrue(contenido.startsWith("${BOM}Fecha;Hora;Zona;Humedad (%);ADC;Nivel\r\n"))
         assertTrue(contenido.contains(";1;52,0;2500;Intermedia\r\n"))
         assertEquals("Archivo guardado: 1 medición", ui.mensaje?.texto)
 
@@ -302,6 +308,42 @@ class MainViewModelTest {
         vm.alSegundoPlano()
         vm.alPrimerPlano()
         assertEquals(listOf("pausar", "reanudar"), repo.sondeo)
+        // Al volver a primer plano se reanuda la vigilancia si estaba encendida.
+        assertEquals(1, vigilancia.reanudaciones)
+    }
+
+    @Test
+    fun conVigilanciaElSondeoSigueEnSegundoPlano() {
+        vm.alPrimerPlano()
+        controlSondeo.vigilancia(true) // lo hace el servicio al arrancar
+        vm.alSegundoPlano()
+        assertFalse("pausar" in repo.sondeo)
+        controlSondeo.vigilancia(false) // el servicio se detuvo
+        assertEquals("pausar", repo.sondeo.last())
+    }
+
+    @Test
+    fun activarYDesactivarLaVigilancia() {
+        assertFalse(ui.vigilanciaActiva)
+        vm.activarVigilancia(true)
+        assertTrue(vigilancia.activa.value)
+        assertTrue(ui.vigilanciaActiva)
+        assertEquals(TipoMensaje.INFO, ui.mensaje?.tipo)
+        vm.activarVigilancia(false)
+        assertFalse(ui.vigilanciaActiva)
+    }
+}
+
+private class VigilanciaFalsa : Vigilancia {
+    override val activa = MutableStateFlow(false)
+    var reanudaciones = 0
+
+    override fun activar(activa: Boolean) {
+        this.activa.value = activa
+    }
+
+    override fun reanudarSiCorresponde() {
+        reanudaciones++
     }
 }
 

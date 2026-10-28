@@ -11,6 +11,15 @@
          Es de ejecución (grupo NEARBY_DEVICES): lo pide la UI; antes de API 37 no existe. -->
     <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
 
+    <!-- Vigilancia en segundo plano (opcional, la activa el usuario): servicio en primer plano
+         de tipo "dispositivo conectado" que sigue consultando al robot con la pantalla apagada. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+    <!-- Sin él la CPU duerme con la pantalla apagada y las consultas se detienen. -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- Avisos de fallas, riegos y conexión (Android 13+: lo pide la UI al activar la vigilancia). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <application
         android:name=".FertiTrackApp"
         android:allowBackup="false"
@@ -32,5 +41,10 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <service
+            android:name=".vigilancia.ServicioVigilancia"
+            android:exported="false"
+            android:foregroundServiceType="connectedDevice" />
     </application>
 </manifest>

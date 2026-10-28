@@ -93,6 +93,23 @@ configurados. La build release no incluye el simulador.
 Los detalles de red y permisos por versión de Android están en
 [docs/RED_ANDROID.md](docs/RED_ANDROID.md).
 
+## Historial, exportar y avisos
+
+- **Historial guardado:** mediciones (hasta 300, unas 24 h con el automático cada 30 min),
+  riegos, bombeos por zona y los últimos 30 eventos se guardan en los archivos privados de la
+  app y siguen ahí al volver a abrirla. El robot real y el simulador tienen historiales
+  separados. Se borra desde **Gráficas → Historial guardado → Borrar historial**.
+- **Exportar a CSV:** en la misma tarjeta, *Mediciones CSV* y *Riegos CSV* abren el selector
+  del sistema (Descargas, Drive…; no piden permisos). Los archivos usan `;`, coma decimal y
+  BOM UTF-8: se abren con doble clic en Excel en español.
+- **Avisos en segundo plano** (**Conexión → Avisos en segundo plano**, apagado por defecto):
+  un servicio en primer plano sigue consultando al robot con la app cerrada o la pantalla
+  apagada, deja una notificación fija con el estado del robot y avisa de fallas, fin de
+  riego (con la sugerencia de fertilizar), zonas secas tras un sensado y cortes de conexión
+  de más de 30 s. Ningún aviso mueve el robot: fertilizar o regar se confirman en la app.
+  Gasta más batería (wake lock parcial); apágalo cuando no haga falta. En Android 13+ pide el
+  permiso de notificaciones; sin él la vigilancia sigue guardando el historial, sin avisos.
+
 ## Compilar y probar desde la terminal
 
 ```bash
@@ -117,7 +134,8 @@ MVVM con `StateFlow`, inyección manual (`di/AppContainer`) y una sola pantalla 
 | `domain.sesion` | `SesionTracker`: eventos, mediciones, riegos y la sugerencia de fertilizar. |
 | `domain.traduccion` | Textos legibles de estados, fallas y resultados. |
 | `domain.analisis` | Análisis automático por reglas (insights). |
-| `data` | Cliente HTTP del Maestro, sondeo con backoff y enlace con la red del AP. |
+| `data` | Cliente HTTP del Maestro, sondeo con backoff, enlace con la red del AP, seguimiento y guardado del historial, exportación CSV. |
+| `vigilancia` | Servicio en primer plano, notificaciones y sus textos. |
 | `simulador` | Interfaz del simulador; en `src/debug`, el `FakeFertiTrackServer`. |
 | `ui` | `MainViewModel`, tema, pantallas (Inicio, Zonas, Gráficas, Control, Análisis y Conexión). |
 
@@ -125,7 +143,8 @@ MVVM con `StateFlow`, inyección manual (`di/AppContainer`) y una sola pantalla 
 
 - **Una petición a la vez:** el servidor del ESP32 atiende de a una y cada petición retrasa su
   máquina de estados. Hay una sola petición en vuelo, `/api/estado` se consulta cada 1,5 s, el
-  timeout es de 3 s y el sondeo se pausa con la app en segundo plano.
+  timeout es de 3 s y el sondeo se pausa con la app en segundo plano, salvo que el usuario
+  encienda la vigilancia.
 - **Solo se reintenta `/api/estado`**, con backoff. Ninguna orden que mueva el robot se
   reintenta sola.
 - **Rutinas solo en espera:** ciclo, sensado, fertilización y activar el automático solo se
@@ -150,7 +169,7 @@ MVVM con `StateFlow`, inyección manual (`di/AppContainer`) y una sola pantalla 
 | lifecycle-runtime-compose y viewmodel-compose | `collectAsStateWithLifecycle` y `ViewModel` con Factory. |
 | core-ktx | Extensiones de AndroidX (`getSystemService`, comprobación de permisos). |
 | OkHttp | Timeouts, cancelación y `SocketFactory` por red, para salir por el Wi-Fi del robot. |
-| kotlinx.serialization | JSON de `/api/estado` sin reflexión; compatible con R8. |
+| kotlinx.serialization | JSON de `/api/estado` y del historial guardado, sin reflexión; compatible con R8. |
 | kotlinx-coroutines | Sondeo y órdenes sin bloquear la interfaz. |
 | Vico (compose-m3) | Gráficas nativas de Compose con tema Material 3. MPAndroidChart obligaría a envolver Views. |
 | JUnit 4 y coroutines-test | Pruebas unitarias con tiempo virtual. |
@@ -161,7 +180,8 @@ MVVM con `StateFlow`, inyección manual (`di/AppContainer`) y una sola pantalla 
 - **Fase 1:** paridad con la app de escritorio usando el contrato real del firmware.
 - **Fase 2 (pendiente):** configuración del recorrido, calibraciones de distancia y sensor, y
   mapa de fallas ampliado. La capa de datos ya implementa esas rutas.
-- **Fase 3:** solo a pedido (historial persistente, notificaciones, exportar datos).
+- **Fase 3:** historial guardado, exportación a CSV y avisos en segundo plano (sin
+  dependencias nuevas: notificaciones con `core-ktx`, almacenamiento en JSON).
 
 Lo que el firmware no ofrece y convendría añadir está en
 [docs/PETICIONES_FIRMWARE.md](docs/PETICIONES_FIRMWARE.md).

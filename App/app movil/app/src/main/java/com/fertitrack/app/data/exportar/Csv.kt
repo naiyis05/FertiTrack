@@ -14,7 +14,7 @@ import kotlin.math.roundToLong
  * (tildes bien) y fin de línea CRLF. Google Sheets y LibreOffice también lo leen.
  */
 object Csv {
-    private const val BOM = "﻿"
+    private val BOM = Char(0xFEFF).toString()
     private const val FIN = "\r\n"
     private val FECHA = DateTimeFormatter.ofPattern("yyyy-MM-dd")
     private val HORA = DateTimeFormatter.ofPattern("HH:mm:ss")

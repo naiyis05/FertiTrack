@@ -35,6 +35,7 @@ class DobleAcciones : AccionesUi {
     override fun simularFalla(codigo: Int) { llamadas += "simularFalla($codigo)" }
     override fun simularPerdidaConexion(segundos: Int) { llamadas += "simularPerdidaConexion($segundos)" }
 
+    override fun activarVigilancia(activa: Boolean) { llamadas += "activarVigilancia($activa)" }
     override fun exportar(tipo: TipoExportacion, destino: String) { llamadas += "exportar($tipo, $destino)" }
 
     override fun mensajeMostrado(id: Long) {

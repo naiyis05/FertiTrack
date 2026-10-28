@@ -1,5 +1,6 @@
 package com.fertitrack.app.ui.pantallas
 
+import android.Manifest
 import android.app.Application
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.CompositionLocalProvider
@@ -48,6 +49,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 /** Reglas de seguridad y dibujo de todas las pantallas (Robolectric, sin emulador). */
@@ -425,6 +427,25 @@ class PruebasPantallas {
         compose.onNodeWithText("12 mediciones hasta las", substring = true).assertIsDisplayed()
         compose.onNodeWithTag(tagRango(RangoGrafica.SEIS_HORAS)).performClick()
         compose.onNodeWithText("13 mediciones hasta las", substring = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun conexion_encenderLaVigilanciaConPermisoDeNotificaciones() {
+        shadowOf(compose.activity.application).grantPermissions(Manifest.permission.POST_NOTIFICATIONS)
+        mostrar(EstadosMuestra.conectadoEspera, conexion = true)
+        compose.onNodeWithTag(TAG_PANTALLA_CONEXION).performScrollToNode(hasTestTag(TAG_TARJETA_VIGILANCIA))
+        compose.onNodeWithTag(TAG_SWITCH_VIGILANCIA).assertIsDisplayed().performClick()
+        assertEquals("activarVigilancia(true)", acciones.llamadas.last())
+    }
+
+    @Test
+    fun conexion_vigilanciaActivaSinPermisoLoExplica() {
+        mostrar(EstadosMuestra.conectadoEspera.copy(vigilanciaActiva = true), conexion = true)
+        compose.onNodeWithTag(TAG_PANTALLA_CONEXION).performScrollToNode(hasTestTag(TAG_TARJETA_VIGILANCIA))
+        compose.onNodeWithText("Sin permiso de notificaciones", substring = true).assertExists()
+        // Apagarla no pide ningún permiso.
+        compose.onNodeWithTag(TAG_SWITCH_VIGILANCIA).performClick()
+        assertEquals("activarVigilancia(false)", acciones.llamadas.last())
     }
 
     @Test

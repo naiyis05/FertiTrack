@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.fertitrack.app.FertiTrackApp
+import com.fertitrack.app.data.ControlSondeo
 import com.fertitrack.app.data.RobotRepository
 import com.fertitrack.app.data.SeguimientoSesion
 import com.fertitrack.app.data.exportar.Csv
@@ -23,6 +24,7 @@ import com.fertitrack.app.domain.sesion.SesionTracker
 import com.fertitrack.app.domain.sesion.TipoEvento
 import com.fertitrack.app.domain.traduccion.Traductor
 import com.fertitrack.app.simulador.Simulador
+import com.fertitrack.app.vigilancia.Vigilancia
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
@@ -47,6 +49,8 @@ class MainViewModel(
     private val simulador: Simulador,
     private val sesion: SeguimientoSesion,
     private val exportador: Exportador,
+    private val controlSondeo: ControlSondeo,
+    private val vigilancia: Vigilancia,
     private val reloj: () -> Long = System::currentTimeMillis,
 ) : ViewModel(), AccionesUi {
 
@@ -87,8 +91,8 @@ class MainViewModel(
         repositorio.usandoSimulador,
     ) { conexion, red, robot, ultima, simulado -> Fuentes(conexion, red, robot, ultima, simulado) }
 
-    val ui: StateFlow<UiState> = combine(fuentes, tracker.resumen, interno, tick) { f, resumen, i, ahora ->
-        construir(f, resumen, i, ahora)
+    val ui: StateFlow<UiState> = combine(fuentes, tracker.resumen, interno, tick, vigilancia.activa) { f, resumen, i, ahora, vigila ->
+        construir(f, resumen, i, ahora).copy(vigilanciaActiva = vigila)
     }.stateIn(
         viewModelScope,
         SharingStarted.Eagerly,
@@ -390,9 +394,28 @@ class MainViewModel(
         interno.update { i -> i.copy(mensajes = i.mensajes.filterNot { it.id == id }) }
     }
 
-    override fun alPrimerPlano() = repositorio.reanudarSondeo()
+    override fun alPrimerPlano() {
+        controlSondeo.appVisible(true)
+        // Si la vigilancia estaba encendida pero su servicio no corre (teléfono reiniciado, el
+        // sistema lo cerró), se vuelve a arrancar: solo se puede con la app a la vista.
+        vigilancia.reanudarSiCorresponde()
+    }
 
-    override fun alSegundoPlano() = repositorio.pausarSondeo()
+    /** Sin vigilancia, el sondeo se pausa; con ella, sigue en el servicio. */
+    override fun alSegundoPlano() = controlSondeo.appVisible(false)
+
+    override fun activarVigilancia(activa: Boolean) {
+        if (activa == vigilancia.activa.value) return
+        vigilancia.activar(activa)
+        mostrar(
+            if (activa) {
+                "Vigilancia activada: verás una notificación fija mientras vigila."
+            } else {
+                "Vigilancia desactivada: con la app cerrada ya no se consulta al robot."
+            },
+            TipoMensaje.INFO,
+        )
+    }
 
     // ── Utilidades ──────────────────────────────────────────────────────────
 
@@ -451,6 +474,8 @@ class MainViewModel(
                     app.contenedor.simulador,
                     app.contenedor.seguimiento,
                     app.contenedor.exportador,
+                    app.contenedor.controlSondeo,
+                    app.contenedor.vigilancia,
                 )
             }
         }
