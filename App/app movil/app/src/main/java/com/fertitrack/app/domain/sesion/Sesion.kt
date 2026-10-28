@@ -29,6 +29,19 @@ data class RiegoRegistrado(
     val completado: Boolean,
 )
 
+/**
+ * Un encendido de la bomba de riego, deducido de las consultas: inicio y fin tienen la
+ * precisión del sondeo (≈ 1,5 s).
+ */
+data class BombeoRiego(
+    /** Zonas del tramo regado (1..n): el firmware riega de una vez las zonas secas contiguas. */
+    val zonas: List<Int>,
+    val inicioMs: Long,
+    val finMs: Long,
+    /** true si se cortó por una falla o una parada de emergencia. */
+    val interrumpido: Boolean,
+)
+
 data class ResumenSesion(
     /** Más reciente primero; como máximo RobotConfig.MAX_EVENTOS. */
     val eventos: List<EventoSesion> = emptyList(),
@@ -36,6 +49,8 @@ data class ResumenSesion(
     val muestras: List<MuestraHumedad> = emptyList(),
     /** Orden cronológico. */
     val riegos: List<RiegoRegistrado> = emptyList(),
+    /** Orden cronológico; como máximo RobotConfig.MAX_EVENTOS. */
+    val bombeos: List<BombeoRiego> = emptyList(),
     val riegosCompletados: Int = 0,
     val totalMediciones: Int = 0,
     /** Promedio de TODAS las mediciones de la sesión (no solo las de la gráfica). */

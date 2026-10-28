@@ -56,6 +56,7 @@ class SesionTrackerTest {
         assertEquals(1, r.riegosCompletados)
         assertEquals(listOf(1), r.riegos.single().zonasRegadas)
         assertTrue(r.riegos.single().completado)
+        assertEquals(BombeoRiego(listOf(1), inicioMs = 13_000, finMs = 14_500, interrumpido = false), r.bombeos.single())
         assertTrue(r.sugerirFertilizar)
         val textos = r.eventos.map { it.texto }
         assertTrue(textos.any { it == "Riego completado (zona 1)" })
@@ -81,6 +82,7 @@ class SesionTrackerTest {
         assertEquals(0, r.riegosCompletados)
         assertFalse(r.riegos.single().completado)
         assertEquals(listOf(1, 2), r.riegos.single().zonasRegadas)
+        assertTrue(r.bombeos.single().interrumpido)
         assertFalse(r.sugerirFertilizar)
         assertTrue(r.eventos.any { it.tipo == TipoEvento.FALLA && it.texto == "Falla 8: Parada desde la app" })
         assertTrue(r.eventos.any { it.texto == "Riego interrumpido" })
@@ -111,14 +113,15 @@ class SesionTrackerTest {
     @Test
     fun respetaTopesYPromediaTodasLasMediciones() {
         paso(robot())
-        repeat(70) { i ->
+        val total = RobotConfig.MAX_PUNTOS_GRAFICA + 10
+        repeat(total) { i ->
             paso(robot(EstadoMaquina.SENSADO_MIDIENDO, ModoRutina.SENSADO, zona = 1))
             paso(robot(EstadoMaquina.SENSADO_AVANZANDO, ModoRutina.SENSADO, zona = 2, adc = 2000, pct = i.toFloat()))
         }
         assertEquals(RobotConfig.MAX_PUNTOS_GRAFICA, r.muestras.size)
-        assertEquals(70, r.totalMediciones)
-        assertEquals(34.5f, r.humedadPromedio!!, 0.01f)
-        assertEquals(69f, r.muestras.last().humedadPct)
+        assertEquals(total, r.totalMediciones)
+        assertEquals((total - 1) / 2f, r.humedadPromedio!!, 0.01f)
+        assertEquals((total - 1).toFloat(), r.muestras.last().humedadPct)
         assertTrue(r.eventos.size <= RobotConfig.MAX_EVENTOS)
     }
 
@@ -170,6 +173,27 @@ class SesionTrackerTest {
         assertEquals(inicio, r.riegos.single().inicioMs)
         assertEquals(1, r.riegosCompletados)
         assertTrue(r.eventos.last().texto.startsWith("Estado inicial"))
+    }
+
+    @Test
+    fun cadaTramoRegadoEsUnBombeoConSusZonas() {
+        // Zonas 2–3 secas y contiguas (un tramo), la 4 húmeda y la 5 seca (otro tramo).
+        val zonas = listOf(HUM, SECA, SECA, HUM, SECA, HUM)
+        paso(robot(zonas = zonas))
+        paso(robot(EstadoMaquina.RIEGO_BAJANDO_BRAZO, ModoRutina.RIEGO, zona = 2, zonas = zonas))
+        paso(robot(EstadoMaquina.RIEGO_AVANZANDO, ModoRutina.RIEGO, zona = 2, zonas = zonas, actividad = Actividad.REGANDO))
+        val inicio = ahora
+        paso(robot(EstadoMaquina.RIEGO_AVANZANDO, ModoRutina.RIEGO, zona = 2, zonas = zonas, actividad = Actividad.REGANDO))
+        paso(robot(EstadoMaquina.RIEGO_AVANZANDO, ModoRutina.RIEGO, zona = 4, zonas = zonas, actividad = Actividad.EN_MOVIMIENTO))
+        val fin = ahora
+        paso(robot(EstadoMaquina.RIEGO_AVANZANDO, ModoRutina.RIEGO, zona = 5, zonas = zonas, actividad = Actividad.REGANDO))
+        paso(robot(EstadoMaquina.RIEGO_RETORNANDO, ModoRutina.RIEGO, zona = 6, zonas = zonas))
+        paso(robot(zonas = zonas))
+
+        assertEquals(listOf(listOf(2, 3), listOf(5)), r.bombeos.map { it.zonas })
+        assertEquals(inicio, r.bombeos.first().inicioMs)
+        assertEquals(fin, r.bombeos.first().finMs)
+        assertTrue(r.bombeos.none { it.interrumpido })
     }
 
     @Test

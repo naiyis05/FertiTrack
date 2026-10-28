@@ -27,6 +27,7 @@ object RobotConfig {
     /** Tope del backoff entre reintentos de /api/estado. */
     const val BACKOFF_MAXIMO_MS = 10_000L
 
-    const val MAX_PUNTOS_GRAFICA = 60
+    /** Mediciones guardadas: ≈ 24 h con el automático cada 30 min sobre 6 zonas. */
+    const val MAX_PUNTOS_GRAFICA = 300
     const val MAX_EVENTOS = 30
 }

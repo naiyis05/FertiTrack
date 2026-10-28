@@ -31,6 +31,9 @@ import kotlin.math.roundToInt
  *   momento (segundo plano o sin conexión) la siguiente respuesta ya llega en otro
  *   estado y el riego se da por terminado entonces; si el ciclo terminó por completo
  *   mientras la app no miraba, no se entera.
+ * - **Bombeos por tramo.** La bomba se da por encendida en `RIEGO_AVANZANDO` regando y se
+ *   apaga al cambiar de estado o de zona. El firmware riega de una vez las zonas secas
+ *   contiguas, así que cada bombeo se asigna a ese tramo de zonas.
  */
 class SesionTracker(private val reloj: () -> Long = System::currentTimeMillis) {
 
@@ -39,11 +42,13 @@ class SesionTracker(private val reloj: () -> Long = System::currentTimeMillis) {
 
     private var anterior: EstadoRobot? = null
     private var riegoActual: RiegoEnCurso? = null
+    private var bombeoActual: BombeoEnCurso? = null
     private var sumaHumedad = 0.0
     private var huboConexion = false
     private var conexionPerdida = false
 
     private data class RiegoEnCurso(val inicioMs: Long, val zonasSecas: List<Int>)
+    private data class BombeoEnCurso(val zona: Int, val inicioMs: Long)
 
     /** Compara [nuevo] con el estado anterior y registra lo que cambió. */
     @Synchronized
@@ -56,10 +61,13 @@ class SesionTracker(private val reloj: () -> Long = System::currentTimeMillis) {
             agregarEvento(ahora, TipoEvento.RUTINA, "Estado inicial: ${Traductor.describirEstado(nuevo).titulo}")
             if (nuevo.hayFalla) registrarFalla(ahora, nuevo)
             if (nuevo.modoRutina == ModoRutina.RIEGO) riegoActual = RiegoEnCurso(ahora, zonasSecas(nuevo))
+            seguirBomba(ahora, nuevo)
             return
         }
 
         if (nuevo.hayFalla && nuevo.codigoFalla != previo.codigoFalla) registrarFalla(ahora, nuevo)
+        // Antes de cerrar la rutina: el tramo regado sale de las zonas secas del riego en curso.
+        seguirBomba(ahora, nuevo)
 
         if (previo.estado == EstadoMaquina.SENSADO_MIDIENDO && nuevo.estado != EstadoMaquina.SENSADO_MIDIENDO) {
             registrarMedicion(ahora, previo.zonaActual.takeIf { it > 0 }, nuevo)
@@ -143,6 +151,7 @@ class SesionTracker(private val reloj: () -> Long = System::currentTimeMillis) {
     fun reiniciarSesion() {
         anterior = null
         riegoActual = null
+        bombeoActual = null
         sumaHumedad = 0.0
         huboConexion = false
         conexionPerdida = false
@@ -246,6 +255,27 @@ class SesionTracker(private val reloj: () -> Long = System::currentTimeMillis) {
             }
             ModoRutina.NINGUNA, ModoRutina.DESCONOCIDO -> Unit
         }
+    }
+
+    /** Abre o cierra el bombeo según la bomba de riego de [nuevo]. */
+    private fun seguirBomba(ahora: Long, nuevo: EstadoRobot) {
+        val encendida = nuevo.bombaRiegoEncendida
+        val actual = bombeoActual
+        if (actual != null && (!encendida || nuevo.zonaActual != actual.zona)) {
+            val interrumpido = nuevo.hayFalla || nuevo.estado == EstadoMaquina.EMERGENCIA
+            val registro = BombeoRiego(tramoRegado(actual.zona), actual.inicioMs, ahora, interrumpido)
+            _resumen.update { it.copy(bombeos = (it.bombeos + registro).takeLast(RobotConfig.MAX_EVENTOS)) }
+            bombeoActual = null
+        }
+        if (encendida && bombeoActual == null) bombeoActual = BombeoEnCurso(nuevo.zonaActual, ahora)
+    }
+
+    /** Zonas secas contiguas desde [zona]: el tramo que el firmware riega sin apagar la bomba. */
+    private fun tramoRegado(zona: Int): List<Int> {
+        if (zona <= 0) return emptyList()
+        val secas = riegoActual?.zonasSecas?.toSet().orEmpty()
+        if (zona !in secas) return listOf(zona)
+        return generateSequence(zona) { it + 1 }.takeWhile { it in secas }.toList()
     }
 
     private fun zonasSecas(robot: EstadoRobot): List<Int> =
