@@ -35,7 +35,7 @@ difieren, manda el firmware.
    **fuera del repositorio**):
 
    ```properties
-   fertitrack.release.storeFile=C:/ruta/fertitrack-release.jks
+   fertitrack.release.storeFile=C\:/ruta/fertitrack-release.jks
    fertitrack.release.storePassword=<clave del almacén>
    fertitrack.release.keyAlias=fertitrack
    fertitrack.release.keyPassword=<clave de la llave>
