@@ -69,7 +69,7 @@ class DecisorRedTest {
 
     @Test
     fun claveWpa2() {
-        assertTrue(DecisorRed.claveWpa2Valida("123456789"))
+        assertTrue(DecisorRed.claveWpa2Valida("12345678")) // 8 caracteres: el mínimo de WPA2
         assertFalse(DecisorRed.claveWpa2Valida("1234567"))
         assertFalse(DecisorRed.claveWpa2Valida("a".repeat(64)))
         assertFalse(DecisorRed.claveWpa2Valida("contraseña1"))
