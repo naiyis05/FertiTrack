@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.fertitrack.app.data.exportar.CsvTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-11-01T00:45:42.315Z" hostname="DESKTOP-JUPJ0A5" time="0.08">
+  <properties/>
+  <testcase name="riegosConDuracionYEstado" classname="com.fertitrack.app.data.exportar.CsvTest" time="0.071"/>
+  <testcase name="medicionesConPuntoYComaYComaDecimal" classname="com.fertitrack.app.data.exportar.CsvTest" time="0.004"/>
+  <testcase name="sinDatosSoloLaCabecera" classname="com.fertitrack.app.data.exportar.CsvTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

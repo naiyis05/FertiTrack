@@ -1,0 +1,248 @@
+{
+  "android/app/build.gradle": {
+    "mtime": 1792983729.872599,
+    "seen": 1793117799.0079887,
+    "ast_hash": "941e2b38813fc362fd9f0b8bced78ffd",
+    "semantic_hash": "941e2b38813fc362fd9f0b8bced78ffd"
+  },
+  "android/app/capacitor.build.gradle": {
+    "mtime": 1792983733.5265658,
+    "seen": 1793117799.0079887,
+    "ast_hash": "b863e425fbde80251bd3c68ac8ccba02",
+    "semantic_hash": "b863e425fbde80251bd3c68ac8ccba02"
+  },
+  "android/app/src/androidTest/java/com/getcapacitor/myapp/ExampleInstrumentedTest.java": {
+    "mtime": 1791382562.0,
+    "seen": 1793117799.0079887,
+    "ast_hash": "fbaf7cc870c663eb52dcf218531c439d",
+    "semantic_hash": "fbaf7cc870c663eb52dcf218531c439d"
+  },
+  "android/app/src/main/java/com/fertitrack/app/MainActivity.java": {
+    "mtime": 1792983729.8702765,
+    "seen": 1793117799.0079887,
+    "ast_hash": "ffd17fba72673239e50d6e034ff2c7aa",
+    "semantic_hash": "ffd17fba72673239e50d6e034ff2c7aa"
+  },
+  "android/app/src/test/java/com/getcapacitor/myapp/ExampleUnitTest.java": {
+    "mtime": 1791382562.0,
+    "seen": 1793117799.0079887,
+    "ast_hash": "e91b4501c14da821682fa5c26a16d616",
+    "semantic_hash": "e91b4501c14da821682fa5c26a16d616"
+  },
+  "android/build.gradle": {
+    "mtime": 1791382562.0,
+    "seen": 1793117799.0079887,
+    "ast_hash": "682315a426653617c6a74fc12bef55b6",
+    "semantic_hash": "682315a426653617c6a74fc12bef55b6"
+  },
+  "android/capacitor.settings.gradle": {
+    "mtime": 1792983733.524571,
+    "seen": 1793117799.0079887,
+    "ast_hash": "455ebb7f9fe84a6974da6bdae43097c2",
+    "semantic_hash": "455ebb7f9fe84a6974da6bdae43097c2"
+  },
+  "android/gradlew": {
+    "mtime": 1791382562.0,
+    "seen": 1793117799.0079887,
+    "ast_hash": "794669d78aef1dd5c7d889ef618b311a",
+    "semantic_hash": "794669d78aef1dd5c7d889ef618b311a"
+  },
+  "android/settings.gradle": {
+    "mtime": 1791382562.0,
+    "seen": 1793117799.0079887,
+    "ast_hash": "f6cd925b3f859e23c3d819fe2459e0e4",
+    "semantic_hash": "f6cd925b3f859e23c3d819fe2459e0e4"
+  },
+  "android/variables.gradle": {
+    "mtime": 1791382562.0,
+    "seen": 1793117799.0079887,
+    "ast_hash": "4b3fce8ea2a515a9d2e47e74757172ec",
+    "semantic_hash": "4b3fce8ea2a515a9d2e47e74757172ec"
+  },
+  "bridge/server.mjs": {
+    "mtime": 1792983191.0480864,
+    "seen": 1793117799.0079887,
+    "ast_hash": "eaceca193469913e608d2ed0c2a9d6f4",
+    "semantic_hash": "eaceca193469913e608d2ed0c2a9d6f4"
+  },
+  "capacitor.config.ts": {
+    "mtime": 1792983724.158757,
+    "seen": 1793117799.0079887,
+    "ast_hash": "2618d9f5f07e79c8eed95f17829fb8f4",
+    "semantic_hash": "2618d9f5f07e79c8eed95f17829fb8f4"
+  },
+  "package.json": {
+    "mtime": 1792983720.8697646,
+    "seen": 1793117799.0079887,
+    "ast_hash": "7ae9f2e79f02e61f50a341f8b2c2c7eb",
+    "semantic_hash": "7ae9f2e79f02e61f50a341f8b2c2c7eb"
+  },
+  "postcss.config.js": {
+    "mtime": 1792983067.2128086,
+    "seen": 1793117799.0079887,
+    "ast_hash": "c735540bb63936a123bc867d950c9f69",
+    "semantic_hash": "c735540bb63936a123bc867d950c9f69"
+  },
+  "src/App.tsx": {
+    "mtime": 1792983502.6095803,
+    "seen": 1793117799.0079887,
+    "ast_hash": "a2522a05968393f886a71159d61dd0f1",
+    "semantic_hash": "a2522a05968393f886a71159d61dd0f1"
+  },
+  "src/components/AppShell.tsx": {
+    "mtime": 1792983499.1043675,
+    "seen": 1793117799.0079887,
+    "ast_hash": "2fdbff3c5165ee1da4906236be2aea1f",
+    "semantic_hash": "2fdbff3c5165ee1da4906236be2aea1f"
+  },
+  "src/components/daniela/DanielaDrawer.tsx": {
+    "mtime": 1792983495.1493073,
+    "seen": 1793117799.0079887,
+    "ast_hash": "4f63aaf3cf573cdbebb1befb98396bf9",
+    "semantic_hash": "4f63aaf3cf573cdbebb1befb98396bf9"
+  },
+  "src/components/views/AnalisisView.tsx": {
+    "mtime": 1792983412.226621,
+    "seen": 1793117799.0079887,
+    "ast_hash": "2f5d3b7454e896e9fc97f861e169ce36",
+    "semantic_hash": "2f5d3b7454e896e9fc97f861e169ce36"
+  },
+  "src/components/views/ControlView.tsx": {
+    "mtime": 1792983408.4341135,
+    "seen": 1793117799.0079887,
+    "ast_hash": "e8a63a6935d548b431de8b9672efed9f",
+    "semantic_hash": "e8a63a6935d548b431de8b9672efed9f"
+  },
+  "src/components/views/DashboardView.tsx": {
+    "mtime": 1792983325.473372,
+    "seen": 1793117799.0079887,
+    "ast_hash": "f0c3fc687e86fcaf13336e341b87d04f",
+    "semantic_hash": "f0c3fc687e86fcaf13336e341b87d04f"
+  },
+  "src/components/views/GraficasView.tsx": {
+    "mtime": 1792983402.2034461,
+    "seen": 1793117799.0079887,
+    "ast_hash": "f47e697f4892ca4212ebd64ce7afa3ed",
+    "semantic_hash": "f47e697f4892ca4212ebd64ce7afa3ed"
+  },
+  "src/components/views/InvernaderoView.tsx": {
+    "mtime": 1792983329.6700344,
+    "seen": 1793117799.0079887,
+    "ast_hash": "fad1e52f0b191417da39ce6eee339b25",
+    "semantic_hash": "fad1e52f0b191417da39ce6eee339b25"
+  },
+  "src/context/FertiTrackContext.tsx": {
+    "mtime": 1792983257.0790918,
+    "seen": 1793117799.0079887,
+    "ast_hash": "477ac4e93ecff0f0801654877f3ec8a4",
+    "semantic_hash": "477ac4e93ecff0f0801654877f3ec8a4"
+  },
+  "src/main.tsx": {
+    "mtime": 1792983507.2646353,
+    "seen": 1793117799.0079887,
+    "ast_hash": "aa122bdcf833a2c00fdf9ca8e5348675",
+    "semantic_hash": "aa122bdcf833a2c00fdf9ca8e5348675"
+  },
+  "src/services/omniRouteDanielaService.ts": {
+    "mtime": 1792983160.4468849,
+    "seen": 1793117799.0079887,
+    "ast_hash": "a456081d6f4e66a850c795e97d7de998",
+    "semantic_hash": "a456081d6f4e66a850c795e97d7de998"
+  },
+  "src/services/protocoloFertiTrack.ts": {
+    "mtime": 1792983132.9715934,
+    "seen": 1793117799.0079887,
+    "ast_hash": "543f9e8d5c800f54929329e4c27fdb33",
+    "semantic_hash": "543f9e8d5c800f54929329e4c27fdb33"
+  },
+  "src/types/sensor.ts": {
+    "mtime": 1792983103.5248022,
+    "seen": 1793117799.0079887,
+    "ast_hash": "d9ecd3aa818ab70c802e3a77e6786794",
+    "semantic_hash": "d9ecd3aa818ab70c802e3a77e6786794"
+  },
+  "tailwind.config.js": {
+    "mtime": 1792983063.4309916,
+    "seen": 1793117799.0079887,
+    "ast_hash": "a53608e996002ed6e5db3e25ea3011d1",
+    "semantic_hash": "a53608e996002ed6e5db3e25ea3011d1"
+  },
+  "tsconfig.json": {
+    "mtime": 1792983054.5830624,
+    "seen": 1793117799.0079887,
+    "ast_hash": "e463301c586ce323389b34acc486fa26",
+    "semantic_hash": "e463301c586ce323389b34acc486fa26"
+  },
+  "vite.config.ts": {
+    "mtime": 1792983059.76236,
+    "seen": 1793117799.0079887,
+    "ast_hash": "d56f837faecaffe42013466388f641f1",
+    "semantic_hash": "d56f837faecaffe42013466388f641f1"
+  },
+  "design/CLAUDE_DESIGN_EXPORT.md": {
+    "mtime": 1792982981.7563288,
+    "seen": 1793117799.0079887,
+    "ast_hash": "9cff6284c9360376045fc81c850ef774",
+    "semantic_hash": "9cff6284c9360376045fc81c850ef774"
+  },
+  "design/DESKTOP_TO_MOBILE_MAPPING.md": {
+    "mtime": 1792983000.9693196,
+    "seen": 1793117799.0079887,
+    "ast_hash": "bc091fa6f0052fc0f49c9b1b90408c33",
+    "semantic_hash": "bc091fa6f0052fc0f49c9b1b90408c33"
+  },
+  "index.html": {
+    "mtime": 1792983070.7116854,
+    "seen": 1793117799.0079887,
+    "ast_hash": "9edd85ed7dbe5ae9c7b08fd5cebe7834",
+    "semantic_hash": "9edd85ed7dbe5ae9c7b08fd5cebe7834"
+  },
+  "android/app/src/main/res/drawable/splash.png": {
+    "mtime": 1791382562.0,
+    "seen": 1793117799.0079887,
+    "ast_hash": "acc976d4a36479233371a53021525c0c",
+    "semantic_hash": "acc976d4a36479233371a53021525c0c"
+  },
+  "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png": {
+    "mtime": 1791382562.0,
+    "seen": 1793117799.0079887,
+    "ast_hash": "9e029293ab1ae8e3a6a7b7d0b7177e46",
+    "semantic_hash": "9e029293ab1ae8e3a6a7b7d0b7177e46"
+  },
+  "design/reference-screens/01-dashboard.jpg": {
+    "mtime": 1792981857.347825,
+    "seen": 1793117799.0079887,
+    "ast_hash": "995121e5bd35b9409f942772b8f73f37",
+    "semantic_hash": "995121e5bd35b9409f942772b8f73f37"
+  },
+  "design/reference-screens/02-invernadero.jpg": {
+    "mtime": 1792981857.3583417,
+    "seen": 1793117799.0079887,
+    "ast_hash": "2b50fb16ed92baf3fe197d18860797ac",
+    "semantic_hash": "2b50fb16ed92baf3fe197d18860797ac"
+  },
+  "design/reference-screens/03-graficas.jpg": {
+    "mtime": 1792981857.2964516,
+    "seen": 1793117799.0079887,
+    "ast_hash": "056e77764f6c4569e76e34c3a947a5d8",
+    "semantic_hash": "056e77764f6c4569e76e34c3a947a5d8"
+  },
+  "design/reference-screens/04-control.jpeg": {
+    "mtime": 1792980201.1360185,
+    "seen": 1793117799.0079887,
+    "ast_hash": "79ea54a3d38863c247230870cd975b2f",
+    "semantic_hash": "79ea54a3d38863c247230870cd975b2f"
+  },
+  "design/reference-screens/05-analisis.jpg": {
+    "mtime": 1792981857.3040845,
+    "seen": 1793117799.0079887,
+    "ast_hash": "6b4774dd143b25f277ca0ea12ca61c6f",
+    "semantic_hash": "6b4774dd143b25f277ca0ea12ca61c6f"
+  },
+  "design/reference-screens/06-daniela-chat.jpg": {
+    "mtime": 1792981857.3361797,
+    "seen": 1793117799.0079887,
+    "ast_hash": "4ec38eaf7324e25852b43ea59397b4fd",
+    "semantic_hash": "4ec38eaf7324e25852b43ea59397b4fd"
+  }
+}

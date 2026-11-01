@@ -1,0 +1,4 @@
+#Wed Oct 28 16:50:41 GMT-05:00 2026
+base.0=D\:\\Downloads\\FertiTrackApp\\App\\app movil\\app\\build\\intermediates\\dex\\release\\minifyReleaseWithR8\\classes.dex
+path.0=classes.dex
+renamed.0=classes.dex

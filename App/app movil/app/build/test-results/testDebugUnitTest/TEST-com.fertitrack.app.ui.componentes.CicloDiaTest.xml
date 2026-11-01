@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.fertitrack.app.ui.componentes.CicloDiaTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-11-01T00:45:52.569Z" hostname="DESKTOP-JUPJ0A5" time="0.206">
+  <properties/>
+  <testcase name="laAnimacionAvanzaComoElRelojSalvoRetrocesosCortos" classname="com.fertitrack.app.ui.componentes.CicloDiaTest" time="0.163"/>
+  <testcase name="coloresContinuosAlrededorDelDia" classname="com.fertitrack.app.ui.componentes.CicloDiaTest" time="0.036"/>
+  <testcase name="fasesSegunLaHora" classname="com.fertitrack.app.ui.componentes.CicloDiaTest" time="0.003"/>
+  <testcase name="elSolCruzaDeDiaYLaLunaDeNoche" classname="com.fertitrack.app.ui.componentes.CicloDiaTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

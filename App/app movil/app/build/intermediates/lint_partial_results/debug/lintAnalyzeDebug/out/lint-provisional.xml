@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<incidents format="6" by="lint 9.4.1" type="conditional_incidents">
+
+    <incident
+        id="NotificationPermission"
+        severity="error"
+        message="When targeting Android 13 or higher, posting a permission requires holding the `POST_NOTIFICATIONS` permission">
+        <fix-data missing="android.permission.POST_NOTIFICATIONS"/>
+        <location
+            file="${:app*debug*MAIN*sourceProvider*0*javaDir*0}/com/fertitrack/app/vigilancia/Notificador.kt"
+            line="85"
+            column="24"
+            startOffset="4097"
+            endLine="85"
+            endColumn="55"
+            endOffset="4128"/>
+    </incident>
+
+    <incident
+        id="ObsoleteSdkInt"
+        severity="warning"
+        message="Unnecessary; `SDK_INT` is always >= 29">
+        <fix-replace
+            description="Delete @RequiresApi"
+            replacement=""
+            priority="0">
+            <range
+                file="${:app*debug*MAIN*sourceProvider*0*javaDir*0}/com/fertitrack/app/data/red/EnlaceRedAndroid.kt"
+                startOffset="4837"
+                endOffset="4872"/>
+        </fix-replace>
+        <location
+            file="${:app*debug*MAIN*sourceProvider*0*javaDir*0}/com/fertitrack/app/data/red/EnlaceRedAndroid.kt"
+            line="120"
+            column="5"
+            startOffset="4837"
+            endLine="120"
+            endColumn="40"
+            endOffset="4872"/>
+        <map>
+            <condition minGE="29-∞"/>
+        </map>
+    </incident>
+
+</incidents>

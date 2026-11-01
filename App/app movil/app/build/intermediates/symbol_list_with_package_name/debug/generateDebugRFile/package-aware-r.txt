@@ -1,0 +1,10 @@
+com.fertitrack.app
+color fondo_ventana
+color icono_fondo
+drawable ic_launcher_foreground
+drawable ic_notificacion
+mipmap ic_launcher
+string app_name
+style Theme_FertiTrack
+xml data_extraction_rules
+xml network_security_config

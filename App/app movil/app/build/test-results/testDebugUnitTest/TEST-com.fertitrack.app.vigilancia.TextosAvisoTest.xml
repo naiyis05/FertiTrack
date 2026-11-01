@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.fertitrack.app.vigilancia.TextosAvisoTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-11-01T00:47:52.506Z" hostname="DESKTOP-JUPJ0A5" time="0.013">
+  <properties/>
+  <testcase name="zonasSecasYConexion" classname="com.fertitrack.app.vigilancia.TextosAvisoTest" time="0.011"/>
+  <testcase name="lineaDeLaNotificacionFija" classname="com.fertitrack.app.vigilancia.TextosAvisoTest" time="0.0"/>
+  <testcase name="fallaConSuAccionSugerida" classname="com.fertitrack.app.vigilancia.TextosAvisoTest" time="0.0"/>
+  <testcase name="riegoCompletadoSugiereFertilizarSinHacerlo" classname="com.fertitrack.app.vigilancia.TextosAvisoTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.fertitrack.app.simulador.MaquinaRobotSimuladaTest" tests="14" skipped="0" failures="0" errors="0" timestamp="2026-11-01T00:45:51.041Z" hostname="DESKTOP-JUPJ0A5" time="0.503">
+  <properties/>
+  <testcase name="reiniciarFueraDeEmergenciaNoHaceNada" classname="com.fertitrack.app.simulador.MaquinaRobotSimuladaTest" time="0.005"/>
+  <testcase name="alEncenderArrancaRecuperaYQuedaEnEspera" classname="com.fertitrack.app.simulador.MaquinaRobotSimuladaTest" time="0.005"/>
+  <testcase name="numerosComoArduino" classname="com.fertitrack.app.simulador.MaquinaRobotSimuladaTest" time="0.001"/>
+  <testcase name="fallasInyectadas" classname="com.fertitrack.app.simulador.MaquinaRobotSimuladaTest" time="0.009"/>
+  <testcase name="cicloCompletoConRiego" classname="com.fertitrack.app.simulador.MaquinaRobotSimuladaTest" time="0.049"/>
+  <testcase name="laMayoriaDeLosCiclosRiegaYAlgunosNo" classname="com.fertitrack.app.simulador.MaquinaRobotSimuladaTest" time="0.312"/>
+  <testcase name="modoAutomaticoConProximoCiclo" classname="com.fertitrack.app.simulador.MaquinaRobotSimuladaTest" time="0.008"/>
+  <testcase name="detenerDeclaraFalla8YReiniciarRecupera" classname="com.fertitrack.app.simulador.MaquinaRobotSimuladaTest" time="0.01"/>
+  <testcase name="configurarRecalculaZonas" classname="com.fertitrack.app.simulador.MaquinaRobotSimuladaTest" time="0.006"/>
+  <testcase name="pruebaDeSensorYCalibracionDelSensor" classname="com.fertitrack.app.simulador.MaquinaRobotSimuladaTest" time="0.014"/>
+  <testcase name="sensadoSoloNoRiega" classname="com.fertitrack.app.simulador.MaquinaRobotSimuladaTest" time="0.006"/>
+  <testcase name="fertilizacion" classname="com.fertitrack.app.simulador.MaquinaRobotSimuladaTest" time="0.003"/>
+  <testcase name="rutasDesconocidasYModoInvalido" classname="com.fertitrack.app.simulador.MaquinaRobotSimuladaTest" time="0.002"/>
+  <testcase name="pruebaDeMovimientoYCalibracionDeDistancia" classname="com.fertitrack.app.simulador.MaquinaRobotSimuladaTest" time="0.009"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

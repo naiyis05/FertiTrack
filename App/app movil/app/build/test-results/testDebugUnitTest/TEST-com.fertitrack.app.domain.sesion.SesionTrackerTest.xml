@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.fertitrack.app.domain.sesion.SesionTrackerTest" tests="15" skipped="0" failures="0" errors="0" timestamp="2026-11-01T00:45:48.499Z" hostname="DESKTOP-JUPJ0A5" time="0.109">
+  <properties/>
+  <testcase name="cicloConRiegoRegistraMuestrasRiegoYSugerencia" classname="com.fertitrack.app.domain.sesion.SesionTrackerTest" time="0.008"/>
+  <testcase name="laSugerenciaSeBorraAlEmpezarOtraRutinaOAlDescartar" classname="com.fertitrack.app.domain.sesion.SesionTrackerTest" time="0.003"/>
+  <testcase name="reiniciarSesionLimpiaTodo" classname="com.fertitrack.app.domain.sesion.SesionTrackerTest" time="0.001"/>
+  <testcase name="primeraRespuestaEnRiegoUsaEseMomentoComoInicio" classname="com.fertitrack.app.domain.sesion.SesionTrackerTest" time="0.004"/>
+  <testcase name="pruebaDeSensorRegistraMuestraSinZona" classname="com.fertitrack.app.domain.sesion.SesionTrackerTest" time="0.001"/>
+  <testcase name="respetaTopesYPromediaTodasLasMediciones" classname="com.fertitrack.app.domain.sesion.SesionTrackerTest" time="0.057"/>
+  <testcase name="falla3AlMedirNoRegistraMuestra" classname="com.fertitrack.app.domain.sesion.SesionTrackerTest" time="0.002"/>
+  <testcase name="noRepiteEventosConsecutivos" classname="com.fertitrack.app.domain.sesion.SesionTrackerTest" time="0.0"/>
+  <testcase name="conexionPerdidaYRecuperadaSinRepetir" classname="com.fertitrack.app.domain.sesion.SesionTrackerTest" time="0.004"/>
+  <testcase name="emiteAvisosDeFallaRiegoZonasSecasYConexion" classname="com.fertitrack.app.domain.sesion.SesionTrackerTest" time="0.019"/>
+  <testcase name="cadaTramoRegadoEsUnBombeoConSusZonas" classname="com.fertitrack.app.domain.sesion.SesionTrackerTest" time="0.001"/>
+  <testcase name="restaurarAnteponeLoGuardadoYRecalculaElPromedio" classname="com.fertitrack.app.domain.sesion.SesionTrackerTest" time="0.0"/>
+  <testcase name="registraOrdenesYModoAutomatico" classname="com.fertitrack.app.domain.sesion.SesionTrackerTest" time="0.001"/>
+  <testcase name="fallaEnPlenoRiegoLoMarcaInterrumpido" classname="com.fertitrack.app.domain.sesion.SesionTrackerTest" time="0.001"/>
+  <testcase name="cicloSinZonasSecasNoRiegaNiSugiere" classname="com.fertitrack.app.domain.sesion.SesionTrackerTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,206 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.fertitrack.app"
+4    android:versionCode="2"
+5    android:versionName="2.0.0" >
+6
+7    <uses-sdk
+7-->INJECTED
+8        android:minSdkVersion="26"
+8-->INJECTED
+9        android:targetSdkVersion="37" />
+9-->INJECTED
+10
+11    <!-- HTTP al Maestro por el AP del robot. Detalles y fuentes: docs/RED_ANDROID.md -->
+12    <uses-permission android:name="android.permission.INTERNET" />
+12-->D:\Downloads\FertiTrackApp\App\app movil\app\src\main\AndroidManifest.xml:5:5-67
+12-->D:\Downloads\FertiTrackApp\App\app movil\app\src\main\AndroidManifest.xml:5:22-64
+13    <!-- registerNetworkCallback: detectar la red Wi-Fi del robot (modo manual) -->
+14    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+14-->D:\Downloads\FertiTrackApp\App\app movil\app\src\main\AndroidManifest.xml:7:5-79
+14-->D:\Downloads\FertiTrackApp\App\app movil\app\src\main\AndroidManifest.xml:7:22-76
+15    <!-- requestNetwork con WifiNetworkSpecifier (modo automático, Android 10+) -->
+16    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
+16-->D:\Downloads\FertiTrackApp\App\app movil\app\src\main\AndroidManifest.xml:9:5-79
+16-->D:\Downloads\FertiTrackApp\App\app movil\app\src\main\AndroidManifest.xml:9:22-76
+17    <!--
+18         Android 17+ (targetSdk 37): sin él se bloquea todo el tráfico a la red local.
+19         Es de ejecución (grupo NEARBY_DEVICES): lo pide la UI; antes de API 37 no existe.
+20    -->
+21    <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
+21-->D:\Downloads\FertiTrackApp\App\app movil\app\src\main\AndroidManifest.xml:12:5-79
+21-->D:\Downloads\FertiTrackApp\App\app movil\app\src\main\AndroidManifest.xml:12:22-76
+22
+23    <!--
+24         Vigilancia en segundo plano (opcional, la activa el usuario): servicio en primer plano
+25         de tipo "dispositivo conectado" que sigue consultando al robot con la pantalla apagada.
+26    -->
+27    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+27-->D:\Downloads\FertiTrackApp\App\app movil\app\src\main\AndroidManifest.xml:16:5-77
+27-->D:\Downloads\FertiTrackApp\App\app movil\app\src\main\AndroidManifest.xml:16:22-74
+28    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+28-->D:\Downloads\FertiTrackApp\App\app movil\app\src\main\AndroidManifest.xml:17:5-94
+28-->D:\Downloads\FertiTrackApp\App\app movil\app\src\main\AndroidManifest.xml:17:22-91
+29    <!-- Sin él la CPU duerme con la pantalla apagada y las consultas se detienen. -->
+30    <uses-permission android:name="android.permission.WAKE_LOCK" />
+30-->D:\Downloads\FertiTrackApp\App\app movil\app\src\main\AndroidManifest.xml:19:5-68
+30-->D:\Downloads\FertiTrackApp\App\app movil\app\src\main\AndroidManifest.xml:19:22-65
+31    <!-- Avisos de fallas, riegos y conexión (Android 13+: lo pide la UI al activar la vigilancia). -->
+32    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+32-->D:\Downloads\FertiTrackApp\App\app movil\app\src\main\AndroidManifest.xml:21:5-77
+32-->D:\Downloads\FertiTrackApp\App\app movil\app\src\main\AndroidManifest.xml:21:22-74
+33
+34    <permission
+34-->[androidx.core:core:1.19.1] C:\Users\USUARIO\.gradle\caches\9.8.2\transforms\5682e6c98479ada76617b59a99db6301\transformed\core-1.19.1\AndroidManifest.xml:22:5-24:47
+35        android:name="com.fertitrack.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+35-->[androidx.core:core:1.19.1] C:\Users\USUARIO\.gradle\caches\9.8.2\transforms\5682e6c98479ada76617b59a99db6301\transformed\core-1.19.1\AndroidManifest.xml:23:9-81
+36        android:protectionLevel="signature" />
+36-->[androidx.core:core:1.19.1] C:\Users\USUARIO\.gradle\caches\9.8.2\transforms\5682e6c98479ada76617b59a99db6301\transformed\core-1.19.1\AndroidManifest.xml:24:9-44
+37
+38    <uses-permission android:name="com.fertitrack.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+38-->[androidx.core:core:1.19.1] C:\Users\USUARIO\.gradle\caches\9.8.2\transforms\5682e6c98479ada76617b59a99db6301\transformed\core-1.19.1\AndroidManifest.xml:26:5-97
+38-->[androidx.core:core:1.19.1] C:\Users\USUARIO\.gradle\caches\9.8.2\transforms\5682e6c98479ada76617b59a99db6301\transformed\core-1.19.1\AndroidManifest.xml:26:22-94
+39
+40    <application
+40-->D:\Downloads\FertiTrackApp\App\app movil\app\src\main\AndroidManifest.xml:23:5-49:19
+41        android:name="com.fertitrack.app.FertiTrackApp"
+41-->D:\Downloads\FertiTrackApp\App\app movil\app\src\main\AndroidManifest.xml:24:9-38
+42        android:allowBackup="false"
+42-->D:\Downloads\FertiTrackApp\App\app movil\app\src\main\AndroidManifest.xml:25:9-36
+43        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+43-->[androidx.core:core:1.19.1] C:\Users\USUARIO\.gradle\caches\9.8.2\transforms\5682e6c98479ada76617b59a99db6301\transformed\core-1.19.1\AndroidManifest.xml:28:18-86
+44        android:dataExtractionRules="@xml/data_extraction_rules"
+44-->D:\Downloads\FertiTrackApp\App\app movil\app\src\main\AndroidManifest.xml:26:9-65
+45        android:extractNativeLibs="false"
+45-->INJECTED
+46        android:fullBackupContent="false"
+46-->D:\Downloads\FertiTrackApp\App\app movil\app\src\main\AndroidManifest.xml:27:9-42
+47        android:icon="@mipmap/ic_launcher"
+47-->D:\Downloads\FertiTrackApp\App\app movil\app\src\main\AndroidManifest.xml:28:9-43
+48        android:label="@string/app_name"
+48-->D:\Downloads\FertiTrackApp\App\app movil\app\src\main\AndroidManifest.xml:30:9-41
+49        android:networkSecurityConfig="@xml/network_security_config"
+49-->D:\Downloads\FertiTrackApp\App\app movil\app\src\main\AndroidManifest.xml:31:9-69
+50        android:roundIcon="@mipmap/ic_launcher"
+50-->D:\Downloads\FertiTrackApp\App\app movil\app\src\main\AndroidManifest.xml:29:9-48
+51        android:supportsRtl="true"
+51-->D:\Downloads\FertiTrackApp\App\app movil\app\src\main\AndroidManifest.xml:32:9-35
+52        android:testOnly="true"
+53        android:theme="@style/Theme.FertiTrack" >
+53-->D:\Downloads\FertiTrackApp\App\app movil\app\src\main\AndroidManifest.xml:33:9-48
+54        <activity
+54-->D:\Downloads\FertiTrackApp\App\app movil\app\src\main\AndroidManifest.xml:35:9-43:20
+55            android:name="com.fertitrack.app.MainActivity"
+55-->D:\Downloads\FertiTrackApp\App\app movil\app\src\main\AndroidManifest.xml:36:13-41
+56            android:exported="true"
+56-->D:\Downloads\FertiTrackApp\App\app movil\app\src\main\AndroidManifest.xml:37:13-36
+57            android:windowSoftInputMode="adjustResize" >
+57-->D:\Downloads\FertiTrackApp\App\app movil\app\src\main\AndroidManifest.xml:38:13-55
+58            <intent-filter>
+58-->D:\Downloads\FertiTrackApp\App\app movil\app\src\main\AndroidManifest.xml:39:13-42:29
+59                <action android:name="android.intent.action.MAIN" />
+59-->D:\Downloads\FertiTrackApp\App\app movil\app\src\main\AndroidManifest.xml:40:17-69
+59-->D:\Downloads\FertiTrackApp\App\app movil\app\src\main\AndroidManifest.xml:40:25-66
+60
+61                <category android:name="android.intent.category.LAUNCHER" />
+61-->D:\Downloads\FertiTrackApp\App\app movil\app\src\main\AndroidManifest.xml:41:17-77
+61-->D:\Downloads\FertiTrackApp\App\app movil\app\src\main\AndroidManifest.xml:41:27-74
+62            </intent-filter>
+63        </activity>
+64
+65        <service
+65-->D:\Downloads\FertiTrackApp\App\app movil\app\src\main\AndroidManifest.xml:45:9-48:63
+66            android:name="com.fertitrack.app.vigilancia.ServicioVigilancia"
+66-->D:\Downloads\FertiTrackApp\App\app movil\app\src\main\AndroidManifest.xml:46:13-58
+67            android:exported="false"
+67-->D:\Downloads\FertiTrackApp\App\app movil\app\src\main\AndroidManifest.xml:47:13-37
+68            android:foregroundServiceType="connectedDevice" />
+68-->D:\Downloads\FertiTrackApp\App\app movil\app\src\main\AndroidManifest.xml:48:13-60
+69
+70        <uses-library
+70-->[androidx.window:window:1.5.0] C:\Users\USUARIO\.gradle\caches\9.8.2\transforms\4649424611d4135cc541e6c894ed2eb4\transformed\window-1.5.0\AndroidManifest.xml:23:9-25:40
+71            android:name="androidx.window.extensions"
+71-->[androidx.window:window:1.5.0] C:\Users\USUARIO\.gradle\caches\9.8.2\transforms\4649424611d4135cc541e6c894ed2eb4\transformed\window-1.5.0\AndroidManifest.xml:24:13-54
+72            android:required="false" />
+72-->[androidx.window:window:1.5.0] C:\Users\USUARIO\.gradle\caches\9.8.2\transforms\4649424611d4135cc541e6c894ed2eb4\transformed\window-1.5.0\AndroidManifest.xml:25:13-37
+73        <uses-library
+73-->[androidx.window:window:1.5.0] C:\Users\USUARIO\.gradle\caches\9.8.2\transforms\4649424611d4135cc541e6c894ed2eb4\transformed\window-1.5.0\AndroidManifest.xml:26:9-28:40
+74            android:name="androidx.window.sidecar"
+74-->[androidx.window:window:1.5.0] C:\Users\USUARIO\.gradle\caches\9.8.2\transforms\4649424611d4135cc541e6c894ed2eb4\transformed\window-1.5.0\AndroidManifest.xml:27:13-51
+75            android:required="false" />
+75-->[androidx.window:window:1.5.0] C:\Users\USUARIO\.gradle\caches\9.8.2\transforms\4649424611d4135cc541e6c894ed2eb4\transformed\window-1.5.0\AndroidManifest.xml:28:13-37
+76
+77        <provider
+77-->[androidx.emoji2:emoji2:1.4.0] C:\Users\USUARIO\.gradle\caches\9.8.2\transforms\40af1477e29f206184558cd5701d86fe\transformed\emoji2-1.4.0\AndroidManifest.xml:24:9-32:20
+78            android:name="androidx.startup.InitializationProvider"
+78-->[androidx.emoji2:emoji2:1.4.0] C:\Users\USUARIO\.gradle\caches\9.8.2\transforms\40af1477e29f206184558cd5701d86fe\transformed\emoji2-1.4.0\AndroidManifest.xml:25:13-67
+79            android:authorities="com.fertitrack.app.androidx-startup"
+79-->[androidx.emoji2:emoji2:1.4.0] C:\Users\USUARIO\.gradle\caches\9.8.2\transforms\40af1477e29f206184558cd5701d86fe\transformed\emoji2-1.4.0\AndroidManifest.xml:26:13-68
+80            android:exported="false" >
+80-->[androidx.emoji2:emoji2:1.4.0] C:\Users\USUARIO\.gradle\caches\9.8.2\transforms\40af1477e29f206184558cd5701d86fe\transformed\emoji2-1.4.0\AndroidManifest.xml:27:13-37
+81            <meta-data
+81-->[androidx.emoji2:emoji2:1.4.0] C:\Users\USUARIO\.gradle\caches\9.8.2\transforms\40af1477e29f206184558cd5701d86fe\transformed\emoji2-1.4.0\AndroidManifest.xml:29:13-31:52
+82                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+82-->[androidx.emoji2:emoji2:1.4.0] C:\Users\USUARIO\.gradle\caches\9.8.2\transforms\40af1477e29f206184558cd5701d86fe\transformed\emoji2-1.4.0\AndroidManifest.xml:30:17-75
+83                android:value="androidx.startup" />
+83-->[androidx.emoji2:emoji2:1.4.0] C:\Users\USUARIO\.gradle\caches\9.8.2\transforms\40af1477e29f206184558cd5701d86fe\transformed\emoji2-1.4.0\AndroidManifest.xml:31:17-49
+84            <meta-data
+84-->[androidx.lifecycle:lifecycle-process:2.11.0] C:\Users\USUARIO\.gradle\caches\9.8.2\transforms\af2144c590b8fbc72213bdf428e50919\transformed\lifecycle-process-2.11.0\AndroidManifest.xml:29:13-31:52
+85                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+85-->[androidx.lifecycle:lifecycle-process:2.11.0] C:\Users\USUARIO\.gradle\caches\9.8.2\transforms\af2144c590b8fbc72213bdf428e50919\transformed\lifecycle-process-2.11.0\AndroidManifest.xml:30:17-78
+86                android:value="androidx.startup" />
+86-->[androidx.lifecycle:lifecycle-process:2.11.0] C:\Users\USUARIO\.gradle\caches\9.8.2\transforms\af2144c590b8fbc72213bdf428e50919\transformed\lifecycle-process-2.11.0\AndroidManifest.xml:31:17-49
+87            <meta-data
+87-->[com.squareup.okhttp3:okhttp-android:5.5.1] C:\Users\USUARIO\.gradle\caches\9.8.2\transforms\41ae839657795ac0e22def53c1bb9e7f\transformed\okhttp\AndroidManifest.xml:16:13-18:52
+88                android:name="okhttp3.internal.platform.PlatformInitializer"
+88-->[com.squareup.okhttp3:okhttp-android:5.5.1] C:\Users\USUARIO\.gradle\caches\9.8.2\transforms\41ae839657795ac0e22def53c1bb9e7f\transformed\okhttp\AndroidManifest.xml:17:17-77
+89                android:value="androidx.startup" />
+89-->[com.squareup.okhttp3:okhttp-android:5.5.1] C:\Users\USUARIO\.gradle\caches\9.8.2\transforms\41ae839657795ac0e22def53c1bb9e7f\transformed\okhttp\AndroidManifest.xml:18:17-49
+90            <meta-data
+90-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\USUARIO\.gradle\caches\9.8.2\transforms\c16943818358c4e9bd85e70cc1f1122f\transformed\profileinstaller-1.4.0\AndroidManifest.xml:29:13-31:52
+91                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+91-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\USUARIO\.gradle\caches\9.8.2\transforms\c16943818358c4e9bd85e70cc1f1122f\transformed\profileinstaller-1.4.0\AndroidManifest.xml:30:17-85
+92                android:value="androidx.startup" />
+92-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\USUARIO\.gradle\caches\9.8.2\transforms\c16943818358c4e9bd85e70cc1f1122f\transformed\profileinstaller-1.4.0\AndroidManifest.xml:31:17-49
+93        </provider>
+94
+95        <receiver
+95-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\USUARIO\.gradle\caches\9.8.2\transforms\c16943818358c4e9bd85e70cc1f1122f\transformed\profileinstaller-1.4.0\AndroidManifest.xml:34:9-52:20
+96            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+96-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\USUARIO\.gradle\caches\9.8.2\transforms\c16943818358c4e9bd85e70cc1f1122f\transformed\profileinstaller-1.4.0\AndroidManifest.xml:35:13-76
+97            android:directBootAware="false"
+97-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\USUARIO\.gradle\caches\9.8.2\transforms\c16943818358c4e9bd85e70cc1f1122f\transformed\profileinstaller-1.4.0\AndroidManifest.xml:36:13-44
+98            android:enabled="true"
+98-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\USUARIO\.gradle\caches\9.8.2\transforms\c16943818358c4e9bd85e70cc1f1122f\transformed\profileinstaller-1.4.0\AndroidManifest.xml:37:13-35
+99            android:exported="true"
+99-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\USUARIO\.gradle\caches\9.8.2\transforms\c16943818358c4e9bd85e70cc1f1122f\transformed\profileinstaller-1.4.0\AndroidManifest.xml:38:13-36
+100            android:permission="android.permission.DUMP" >
+100-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\USUARIO\.gradle\caches\9.8.2\transforms\c16943818358c4e9bd85e70cc1f1122f\transformed\profileinstaller-1.4.0\AndroidManifest.xml:39:13-57
+101            <intent-filter>
+101-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\USUARIO\.gradle\caches\9.8.2\transforms\c16943818358c4e9bd85e70cc1f1122f\transformed\profileinstaller-1.4.0\AndroidManifest.xml:40:13-42:29
+102                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+102-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\USUARIO\.gradle\caches\9.8.2\transforms\c16943818358c4e9bd85e70cc1f1122f\transformed\profileinstaller-1.4.0\AndroidManifest.xml:41:17-91
+102-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\USUARIO\.gradle\caches\9.8.2\transforms\c16943818358c4e9bd85e70cc1f1122f\transformed\profileinstaller-1.4.0\AndroidManifest.xml:41:25-88
+103            </intent-filter>
+104            <intent-filter>
+104-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\USUARIO\.gradle\caches\9.8.2\transforms\c16943818358c4e9bd85e70cc1f1122f\transformed\profileinstaller-1.4.0\AndroidManifest.xml:43:13-45:29
+105                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+105-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\USUARIO\.gradle\caches\9.8.2\transforms\c16943818358c4e9bd85e70cc1f1122f\transformed\profileinstaller-1.4.0\AndroidManifest.xml:44:17-85
+105-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\USUARIO\.gradle\caches\9.8.2\transforms\c16943818358c4e9bd85e70cc1f1122f\transformed\profileinstaller-1.4.0\AndroidManifest.xml:44:25-82
+106            </intent-filter>
+107            <intent-filter>
+107-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\USUARIO\.gradle\caches\9.8.2\transforms\c16943818358c4e9bd85e70cc1f1122f\transformed\profileinstaller-1.4.0\AndroidManifest.xml:46:13-48:29
+108                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+108-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\USUARIO\.gradle\caches\9.8.2\transforms\c16943818358c4e9bd85e70cc1f1122f\transformed\profileinstaller-1.4.0\AndroidManifest.xml:47:17-88
+108-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\USUARIO\.gradle\caches\9.8.2\transforms\c16943818358c4e9bd85e70cc1f1122f\transformed\profileinstaller-1.4.0\AndroidManifest.xml:47:25-85
+109            </intent-filter>
+110            <intent-filter>
+110-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\USUARIO\.gradle\caches\9.8.2\transforms\c16943818358c4e9bd85e70cc1f1122f\transformed\profileinstaller-1.4.0\AndroidManifest.xml:49:13-51:29
+111                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+111-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\USUARIO\.gradle\caches\9.8.2\transforms\c16943818358c4e9bd85e70cc1f1122f\transformed\profileinstaller-1.4.0\AndroidManifest.xml:50:17-95
+111-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\USUARIO\.gradle\caches\9.8.2\transforms\c16943818358c4e9bd85e70cc1f1122f\transformed\profileinstaller-1.4.0\AndroidManifest.xml:50:25-92
+112            </intent-filter>
+113        </receiver>
+114    </application>
+115
+116</manifest>

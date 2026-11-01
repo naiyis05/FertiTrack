@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.fertitrack.app.data.remote.ParserMaestroTest" tests="13" skipped="0" failures="0" errors="0" timestamp="2026-11-01T00:45:48.336Z" hostname="DESKTOP-JUPJ0A5" time="0.041">
+  <properties/>
+  <testcase name="camposQueFaltanONulosUsanValoresSeguros" classname="com.fertitrack.app.data.remote.ParserMaestroTest" time="0.002"/>
+  <testcase name="floatsQueLleganComoEnteros" classname="com.fertitrack.app.data.remote.ParserMaestroTest" time="0.0"/>
+  <testcase name="ordenExitoConDatos" classname="com.fertitrack.app.data.remote.ParserMaestroTest" time="0.001"/>
+  <testcase name="ordenCuerpoRaroEsErrorRobot" classname="com.fertitrack.app.data.remote.ParserMaestroTest" time="0.004"/>
+  <testcase name="proximoCicloYAutoActivo" classname="com.fertitrack.app.data.remote.ParserMaestroTest" time="0.001"/>
+  <testcase name="estadoCompletoRealista" classname="com.fertitrack.app.data.remote.ParserMaestroTest" time="0.002"/>
+  <testcase name="jsonRotoOSinEstadoEsFalloControlado" classname="com.fertitrack.app.data.remote.ParserMaestroTest" time="0.006"/>
+  <testcase name="parametrosComoLosLeeElFirmware" classname="com.fertitrack.app.data.remote.ParserMaestroTest" time="0.005"/>
+  <testcase name="estadoDesconocidoConservaElTexto" classname="com.fertitrack.app.data.remote.ParserMaestroTest" time="0.001"/>
+  <testcase name="menosUnoEsSinDato" classname="com.fertitrack.app.data.remote.ParserMaestroTest" time="0.001"/>
+  <testcase name="estadoConCodigoDeErrorEsFallido" classname="com.fertitrack.app.data.remote.ParserMaestroTest" time="0.013"/>
+  <testcase name="camposDeMasSeIgnoran" classname="com.fertitrack.app.data.remote.ParserMaestroTest" time="0.002"/>
+  <testcase name="ordenCodigosDeError" classname="com.fertitrack.app.data.remote.ParserMaestroTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

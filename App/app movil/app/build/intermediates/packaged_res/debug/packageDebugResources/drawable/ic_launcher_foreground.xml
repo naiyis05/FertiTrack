@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Hoja FertiTrack dentro de la zona segura del icono adaptable (66 dp centrales). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M37,73 C37,50 52,35 76,34 C76,57 61,73 37,73 Z" />
+    <path
+        android:strokeColor="#16A34A"
+        android:strokeWidth="2.6"
+        android:strokeLineCap="round"
+        android:pathData="M42,68 L68,42" />
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3.2"
+        android:strokeLineCap="round"
+        android:pathData="M37,73 L31,79" />
+</vector>

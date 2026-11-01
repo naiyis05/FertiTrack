@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.fertitrack.app.simulador.FakeFertiTrackServerTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-11-01T00:45:48.652Z" hostname="DESKTOP-JUPJ0A5" time="2.383">
+  <properties/>
+  <testcase name="perdidaDeConexionProvocaTimeouts" classname="com.fertitrack.app.simulador.FakeFertiTrackServerTest" time="1.0"/>
+  <testcase name="fallaInyectada" classname="com.fertitrack.app.simulador.FakeFertiTrackServerTest" time="0.126"/>
+  <testcase name="simuladorDebugArrancaYSeDetiene" classname="com.fertitrack.app.simulador.FakeFertiTrackServerTest" time="0.434"/>
+  <testcase name="cicloCompletoConRiegoYOcupado" classname="com.fertitrack.app.simulador.FakeFertiTrackServerTest" time="0.542"/>
+  <testcase name="detenerDeclaraFalla8YReiniciarVuelveAEspera" classname="com.fertitrack.app.simulador.FakeFertiTrackServerTest" time="0.174"/>
+  <testcase name="configurarDevuelveLosDatosDelFirmware" classname="com.fertitrack.app.simulador.FakeFertiTrackServerTest" time="0.105"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

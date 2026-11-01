@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="fondo_ventana">#F4F8F5</color>
+    <color name="icono_fondo">#16A34A</color>
+    <string name="app_name">FertiTrack</string>
+    <style name="Theme.FertiTrack" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/fondo_ventana</item>
+    </style>
+</resources>
