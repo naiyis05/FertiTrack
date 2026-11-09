@@ -11,7 +11,8 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * JSON de /api/estado tal como lo arma ruta_estado() del Maestro v5.3.
+ * JSON de /api/estado tal como lo arma ruta_estado() del Maestro v6. Los campos que la app no
+ * usa (velocidades, modo fuerza, actuadores, rueda) se ignoran.
  *
  * Solo "estado" es obligatorio: sin él la respuesta no se considera del robot. El resto usa
  * valores por defecto seguros si falta o llega null (−1 = sin dato, DESCONOCIDO para códigos).

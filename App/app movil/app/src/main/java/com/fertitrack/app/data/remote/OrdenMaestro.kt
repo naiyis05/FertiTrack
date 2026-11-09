@@ -5,9 +5,9 @@ import com.fertitrack.app.domain.modelo.PuntoCalibracion
 import java.math.BigDecimal
 
 /**
- * Órdenes del Maestro v5.3 con sus parámetros de consulta exactamente como los leen las
- * funciones ruta_* del firmware (server.arg). Los opcionales que valen null no se envían, y
- * entonces el firmware conserva su valor actual.
+ * Órdenes del Maestro v6 que usa la app, con sus parámetros de consulta exactamente como los
+ * leen las funciones ruta_* del firmware (server.arg). Los opcionales que valen null no se
+ * envían, y entonces el firmware conserva su valor actual.
  */
 sealed class OrdenMaestro(
     /** Ruta sin barra inicial, p. ej. "api/iniciar". */

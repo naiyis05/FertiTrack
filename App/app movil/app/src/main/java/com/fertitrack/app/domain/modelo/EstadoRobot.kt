@@ -1,6 +1,6 @@
 package com.fertitrack.app.domain.modelo
 
-/** Valores de `estado` en /api/estado (nombreEstado() del Maestro v5.3). */
+/** Valores de `estado` en /api/estado (nombreEstado() del Maestro v6). */
 enum class EstadoMaquina {
     ESPERANDO,
     SENSADO_AVANZANDO, SENSADO_MIDIENDO, SENSADO_RETORNANDO,
@@ -9,6 +9,9 @@ enum class EstadoMaquina {
     RECUP_ESPERA, RECUP_BRAZO_RIEGO, RECUP_BRAZO_FERTI, RECUP_RETORNANDO,
     ARRANQUE,
     PRUEBA_AVANZANDO, PRUEBA_LISTA, PRUEBA_RETORNANDO, PRUEBA_SENSOR,
+
+    /** v6: extender o recoger un brazo a mano desde la página web del Maestro. */
+    PRUEBA_BRAZO,
     EMERGENCIA,
 
     /** Cualquier texto no reconocido (el firmware envía "?" en el default). */

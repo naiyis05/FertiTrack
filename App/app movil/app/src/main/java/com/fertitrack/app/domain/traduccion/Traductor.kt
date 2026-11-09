@@ -113,6 +113,11 @@ object Traductor {
             EstadoMaquina.PRUEBA_SENSOR -> DescripcionEstado(
                 "Prueba de sensor", "Midiendo la humedad (unos 8 s)", CategoriaEstado.PRUEBA,
             )
+            EstadoMaquina.PRUEBA_BRAZO -> DescripcionEstado(
+                "Prueba de brazo",
+                "Extendiendo o recogiendo un brazo desde la página del Maestro",
+                CategoriaEstado.PRUEBA,
+            )
             EstadoMaquina.EMERGENCIA -> {
                 val falla = describirFalla(robot.codigoFalla)
                 DescripcionEstado(
@@ -159,6 +164,7 @@ object Traductor {
         EstadoMaquina.PRUEBA_LISTA -> "Prueba de distancia lista"
         EstadoMaquina.PRUEBA_RETORNANDO -> "Prueba de distancia: volviendo"
         EstadoMaquina.PRUEBA_SENSOR -> "Prueba de sensor: midiendo"
+        EstadoMaquina.PRUEBA_BRAZO -> "Prueba de brazo"
         EstadoMaquina.EMERGENCIA -> "Emergencia"
         EstadoMaquina.DESCONOCIDO -> "Estado desconocido ($textoOriginal)"
     }

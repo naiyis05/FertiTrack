@@ -1,7 +1,9 @@
-# Peticiones de cambio al firmware (Maestro v5.3)
+# Peticiones de cambio al firmware (Maestro v6)
 
 La app no modifica el firmware ni simula lo que este no ofrece. Esta lista recoge lo que
 mejoraría la app si se añadiera al Maestro. Ninguna es imprescindible para la Fase 1.
+Se hizo con la v5.3; la v6 no resuelve ninguna (solo añade velocidades, modo fuerza, actuadores,
+diámetro de rueda y prueba de brazo).
 
 | # | Petición | Por qué | Cómo lo resuelve hoy la app |
 |---|----------|---------|-----------------------------|

@@ -58,7 +58,8 @@ internal class RespuestaSimulada(
 )
 
 /**
- * Máquina de estados del Maestro v5.3 (loop(), rutinas y ruta_*) con tiempos acortados.
+ * Máquina de estados del Maestro v6 (loop(), rutinas y ruta_*) con tiempos acortados. Imita las
+ * rutas que usa la app; no las de velocidades, actuadores, rueda ni prueba de brazo.
  *
  * Es perezosa y determinista: cada paso que en el robot espera la respuesta de ESP_A/ESP_B
  * tiene un plazo ([finPasoMs]); [avanzarHasta] procesa en orden todos los plazos vencidos según
@@ -298,7 +299,8 @@ internal class MaquinaRobotSimulada(
                 estadoActual = ESPERANDO
                 actividadActual = 0
             }
-            ESPERANDO, PRUEBA_LISTA, EMERGENCIA, EstadoMaquina.DESCONOCIDO -> Unit
+            // PRUEBA_BRAZO: el simulador no implementa /api/prueba_brazo (la app no la usa).
+            ESPERANDO, PRUEBA_LISTA, EstadoMaquina.PRUEBA_BRAZO, EMERGENCIA, EstadoMaquina.DESCONOCIDO -> Unit
         }
     }
 

@@ -36,6 +36,7 @@ class TraductorTest {
         assertEquals(CategoriaEstado.RECUPERACION, Traductor.describirEstado(robot(EstadoMaquina.RECUP_RETORNANDO)).categoria)
         assertEquals(CategoriaEstado.ARRANQUE, Traductor.describirEstado(robot(EstadoMaquina.ARRANQUE)).categoria)
         assertEquals(CategoriaEstado.PRUEBA, Traductor.describirEstado(robot(EstadoMaquina.PRUEBA_LISTA)).categoria)
+        assertEquals(CategoriaEstado.PRUEBA, Traductor.describirEstado(robot(EstadoMaquina.PRUEBA_BRAZO)).categoria)
         assertEquals(CategoriaEstado.EMERGENCIA, Traductor.describirEstado(robot(EstadoMaquina.EMERGENCIA, falla = 9)).categoria)
         assertEquals(CategoriaEstado.DESCONOCIDO, Traductor.describirEstado(robot(EstadoMaquina.DESCONOCIDO)).categoria)
     }

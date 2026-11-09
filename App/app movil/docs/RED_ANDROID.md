@@ -119,7 +119,8 @@ Fuente: <https://developer.android.com/privacy-and-security/security-config>
 ## 7. Simulador (solo builds debug)
 
 `FakeFertiTrackServer`: servidor HTTP/1.1 hecho a mano en `127.0.0.1` (puerto efímero), una conexión
-a la vez, `Connection: close`, mismos campos, códigos y textos que las `ruta_*` del firmware v5.3, y
+a la vez, `Connection: close`, mismos campos, códigos y textos que las `ruta_*` del firmware v6 que
+usa la app (no imita las rutas de velocidades, actuadores, rueda ni prueba de brazo), y
 una máquina de estados fiel a `loop()` con tiempos acortados (arranque 3 s, avance 1,5 s, medición
 2 s, brazo 2 s, tramo de riego 3 s, retorno 2 s). Arranca ya configurado (300 cm, 6 zonas) y la
 humedad de cada zona es pseudoaleatoria con semilla: se seca antes de cada sensado y sube al regarla,
@@ -146,7 +147,9 @@ reglas de elección de red (`DecisorRed`) y el simulador completo por HTTP.
   ESP-NOW, y que un `/api/detener` enviado mientras se atiende otra conexión se procese enseguida.
 - `EnlaceRedAndroid` no tiene pruebas instrumentadas (requiere `ConnectivityManager` real).
 
-## 9. Observaciones del firmware v5.3 que afectan a la app
+## 9. Observaciones del firmware que afectan a la app
+
+Revisadas en la v5.3 y confirmadas en la v6 (`FertiTrack_Maestro_v6.ino`).
 
 - `zona_actual` puede valer `total_zonas + 1`: tras el sensado `zonaActual` queda en `numZonas` y no
   se reinicia al terminar (`terminarRutina`), y en el riego avanza de tramo en tramo. La UI debe
@@ -157,3 +160,6 @@ reglas de elección de red (`DecisorRed`) y el simulador completo por HTTP.
   false en `iniciarSensado`/`iniciarFertilizacion`.)*
 - "modo invalido" responde 409 aunque es un error de parámetros (la app lo trata como `Ocupado`).
 - No hay campo de versión del firmware ni indicador de "riego terminado" / "conviene fertilizar".
+- v6: `PRUEBA_BRAZO` (prueba de brazo desde la página web) vuelve a `ESPERANDO` aunque el brazo
+  haya quedado extendido. `/api/estado` no informa la posición de los brazos, así que la app no
+  puede avisarlo. *(Es la petición 8.)*

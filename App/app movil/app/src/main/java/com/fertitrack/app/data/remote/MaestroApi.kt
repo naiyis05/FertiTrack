@@ -6,7 +6,8 @@ import javax.net.SocketFactory
 
 /**
  * Cliente HTTP del Maestro (ESP32). Solo GET, una ruta por orden, tal como las registra
- * configurarServidor() del firmware v5.3.
+ * configurarServidor() del firmware v6 (sin las rutas nuevas de velocidades, actuadores, rueda
+ * y prueba de brazo, que solo usa la página web del Maestro).
  *
  * No aplica reglas de reintento ni de turno: eso lo hace el repositorio. Nunca lanza
  * excepciones por fallos de red ni por respuestas raras; solo propaga la cancelación de la

@@ -89,6 +89,18 @@ class ParserMaestroTest {
     }
 
     @Test
+    fun maestroV6PruebaDeBrazoConCamposNuevos() {
+        val e = FixturesMaestro.estado(FixturesMaestro.ESTADO_PRUEBA_BRAZO_V6)
+        assertEquals(EstadoMaquina.PRUEBA_BRAZO, e.estado)
+        assertEquals(Actividad.EN_MOVIMIENTO, e.actividad)
+        assertEquals(6, e.totalZonas)
+        assertEquals(300f, e.distanciaCm)
+        assertEquals(3082, e.calibracion.umbralSeco)
+        assertTrue(e.distanciaConfigurada)
+        assertFalse(e.listoParaRutinas) // solo en ESPERANDO
+    }
+
+    @Test
     fun camposQueFaltanONulosUsanValoresSeguros() {
         val e = FixturesMaestro.estado("""{"estado":"ESPERANDO","humedad_pct":null,"zonas":null}""")
         assertEquals(0, e.totalZonas)
