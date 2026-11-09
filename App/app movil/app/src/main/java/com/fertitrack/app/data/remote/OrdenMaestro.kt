@@ -65,7 +65,7 @@ sealed class OrdenMaestro(
     /** /api/prueba_retorno: solo después de /api/prueba_mov. */
     data object PruebaRetorno : OrdenMaestro("api/prueba_retorno")
 
-    /** /api/prueba_sensor: 409 si ESP_B no está conectada; mide unos 8 s. */
+    /** /api/prueba_sensor: 409 si ESP_B no está conectada; mide unos 4 s con la ESP_B v5.5. */
     data object PruebaSensor : OrdenMaestro("api/prueba_sensor")
 
     /**

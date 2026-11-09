@@ -1,8 +1,3 @@
-}{]
-
-
-
-
 # FertiTrack para Android
 
 App nativa para monitorear y controlar por Wi-Fi el robot monorriel de invernadero
@@ -26,6 +21,8 @@ app funciona igual. Lo nuevo:
   Mientras dura, las rutinas quedan bloqueadas y DETENER sigue disponible.
 - Actualiza el Maestro y la ESP A juntos: solo la ESP A v6 aplica las velocidades y los tiempos
   de brazo que le envía el Maestro.
+- La ESP B v5.5 usa el mismo protocolo con el Maestro. Mide en unos 4 s en vez de 8 y muestrea
+  distinto, así que conviene repetir la calibración seco/mojado desde la página del Maestro.
 
 ## Requisitos
 

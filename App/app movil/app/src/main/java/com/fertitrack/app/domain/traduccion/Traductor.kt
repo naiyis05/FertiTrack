@@ -111,7 +111,7 @@ object Traductor {
                 "Prueba de distancia", "Volviendo al origen", CategoriaEstado.PRUEBA,
             )
             EstadoMaquina.PRUEBA_SENSOR -> DescripcionEstado(
-                "Prueba de sensor", "Midiendo la humedad (unos 8 s)", CategoriaEstado.PRUEBA,
+                "Prueba de sensor", "Midiendo la humedad (unos segundos)", CategoriaEstado.PRUEBA,
             )
             EstadoMaquina.PRUEBA_BRAZO -> DescripcionEstado(
                 "Prueba de brazo",

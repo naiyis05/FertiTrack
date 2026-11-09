@@ -694,7 +694,7 @@ internal class MaquinaRobotSimulada(
     private fun rutaPruebaSensor(): RespuestaSimulada {
         if (!espBConectada) return responderJson(409, false, "error", "ESP_B no esta conectada")
         if (!iniciarPruebaSensor()) return responderJson(409, false, "error", "sistema ocupado")
-        return responderJson(200, true, "mensaje", "Midiendo (~8 s). Luego veras el ADC en 'Estado'.")
+        return responderJson(200, true, "mensaje", "Midiendo (~8 s). El ADC aparecera en Estado.")
     }
 
     private fun rutaCalSensor(args: Map<String, String>): RespuestaSimulada {
