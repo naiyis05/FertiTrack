@@ -1,9 +1,0 @@
-com.fertitrack.app-pngs-0 D:\Downloads\FertiTrackApp\App\app movil\app\build\generated\res\pngs\release
-com.fertitrack.app-updated_navigation_xml-1 D:\Downloads\FertiTrackApp\App\app movil\app\build\generated\updated_navigation_xml\release
-com.fertitrack.app-packageReleaseResources-2 D:\Downloads\FertiTrackApp\App\app movil\app\build\intermediates\incremental\release\packageReleaseResources\merged.dir
-com.fertitrack.app-packageReleaseResources-3 D:\Downloads\FertiTrackApp\App\app movil\app\build\intermediates\incremental\release\packageReleaseResources\stripped.dir
-com.fertitrack.app-merged-not-compiled-resources-4 D:\Downloads\FertiTrackApp\App\app movil\app\build\intermediates\merged-not-compiled-resources\release
-com.fertitrack.app-release-5 D:\Downloads\FertiTrackApp\App\app movil\app\build\intermediates\merged_res\release\mergeReleaseResources
-com.fertitrack.app-main-6 D:\Downloads\FertiTrackApp\App\app movil\app\src\main\res
-com.fertitrack.app-release-7 D:\Downloads\FertiTrackApp\App\app movil\app\src\release\res
-gradleHome-0 C:\Users\USUARIO\.gradle

@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="com.fertitrack.app.data.historial.AlmacenHistorialArchivoTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-11-01T00:45:42.413Z" hostname="DESKTOP-JUPJ0A5" time="0.439">
-  <properties/>
-  <testcase name="guardaYCargaCadaFuenteEnSuArchivo" classname="com.fertitrack.app.data.historial.AlmacenHistorialArchivoTest" time="0.399"/>
-  <testcase name="unArchivoDanadoSeIgnora" classname="com.fertitrack.app.data.historial.AlmacenHistorialArchivoTest" time="0.018"/>
-  <testcase name="nombresDesconocidosDeOtraVersionNoRompenLaCarga" classname="com.fertitrack.app.data.historial.AlmacenHistorialArchivoTest" time="0.02"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>
