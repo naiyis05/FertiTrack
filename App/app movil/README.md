@@ -1,3 +1,8 @@
+}{]
+
+
+
+
 # FertiTrack para Android
 
 App nativa para monitorear y controlar por Wi-Fi el robot monorriel de invernadero
@@ -5,8 +10,22 @@ FertiTrack. Sustituye a la app de escritorio (WPF) y a la app móvil anterior (R
 
 La app **solo habla con el Maestro** (ESP32): se conecta a su punto de acceso
 `FertiTrack_AP`, consulta `/api/estado` y envía órdenes por HTTP a `192.168.4.1`. El contrato
-HTTP sale de `App/Codigo/Maestro_version5_3.ino`; donde la app de escritorio y el firmware
-difieren, manda el firmware.
+HTTP sale de `App/Codigo/FertiTrack_Maestro_v6.ino`; donde la app de escritorio y el firmware
+difieren, manda el firmware. Las ESP A, B y C y la Pantalla hablan solo con el Maestro
+(ESP-NOW): la app no depende de su código.
+
+### Firmware v6
+
+La v6 del Maestro (y de la ESP A) mantiene todas las rutas y campos que usa la app, así que la
+app funciona igual. Lo nuevo:
+
+- Velocidades, modo fuerza, tiempos de los brazos y diámetro de rueda se ajustan desde la página
+  web del Maestro (`http://192.168.4.1`). `/api/estado` también los envía, pero la app no los
+  muestra todavía (Fase 2).
+- El estado `PRUEBA_BRAZO` (prueba de brazo desde esa página) se muestra como "Prueba de brazo".
+  Mientras dura, las rutinas quedan bloqueadas y DETENER sigue disponible.
+- Actualiza el Maestro y la ESP A juntos: solo la ESP A v6 aplica las velocidades y los tiempos
+  de brazo que le envía el Maestro.
 
 ## Requisitos
 
@@ -179,7 +198,9 @@ MVVM con `StateFlow`, inyección manual (`di/AppContainer`) y una sola pantalla 
 
 - **Fase 1:** paridad con la app de escritorio usando el contrato real del firmware.
 - **Fase 2 (pendiente):** configuración del recorrido, calibraciones de distancia y sensor, y
-  mapa de fallas ampliado. La capa de datos ya implementa esas rutas.
+  mapa de fallas ampliado. La capa de datos ya implementa esas rutas. Con la v6 se podrían sumar
+  velocidades, modo fuerza, brazos y rueda. Mientras tanto, todo se configura desde la página web
+  del Maestro y la app lo lee.
 - **Fase 3:** historial guardado, exportación a CSV y avisos en segundo plano (sin
   dependencias nuevas: notificaciones con `core-ktx`, almacenamiento en JSON).
 
