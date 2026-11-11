@@ -163,3 +163,22 @@ Revisadas en la v5.3 y confirmadas en la v6 (`FertiTrack_Maestro_v6.ino`).
 - v6: `PRUEBA_BRAZO` (prueba de brazo desde la página web) vuelve a `ESPERANDO` aunque el brazo
   haya quedado extendido. `/api/estado` no informa la posición de los brazos, así que la app no
   puede avisarlo. *(Es la petición 8.)*
+
+## 10. Asistente de IA (Gemini)
+
+- **Por dónde sale:** `ClienteGemini` usa un `OkHttpClient` propio, sin la `SocketFactory` del
+  robot, así que va por la red por defecto del teléfono (datos móviles u otro Wi-Fi). El Wi-Fi
+  `FertiTrack_AP` no da internet: si es la única red, Gemini falla rápido con "Sin internet",
+  y el sondeo del robot no se ve afectado.
+- **Seguridad de red:** es HTTPS a `generativelanguage.googleapis.com`. La configuración de
+  seguridad de red no cambia: solo `192.168.4.1` admite HTTP sin cifrar.
+- **Timeouts y reintentos:** 10 s para conectar y 45 s para leer, porque la búsqueda en Google
+  tarda. Sin reintentos automáticos: la persona vuelve a preguntar. Un mensaje nuevo cancela la
+  petición anterior.
+- **Permisos:** `RECORD_AUDIO` se pide al tocar el micrófono. Los `<queries>` de
+  `RecognitionService` y `TTS_SERVICE` son obligatorios desde Android 11 para ver el
+  reconocimiento y la síntesis de voz.
+- **Sin probar en un teléfono:** el reconocimiento de voz del fabricante, el paquete de español
+  sin conexión, y la red por defecto con el teléfono unido a `FertiTrack_AP` y sin datos
+  móviles. En algunos fabricantes Android mantiene el AP como red por defecto aunque no tenga
+  internet.

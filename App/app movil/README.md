@@ -3,11 +3,12 @@
 App nativa para monitorear y controlar por Wi-Fi el robot monorriel de invernadero
 FertiTrack. Sustituye a la app de escritorio (WPF) y a la app móvil anterior (React/Capacitor).
 
-La app **solo habla con el Maestro** (ESP32): se conecta a su punto de acceso
+Para el robot, la app **solo habla con el Maestro** (ESP32): se conecta a su punto de acceso
 `FertiTrack_AP`, consulta `/api/estado` y envía órdenes por HTTP a `192.168.4.1`. El contrato
 HTTP sale de `App/Codigo/FertiTrack_Maestro_v6.ino`; donde la app de escritorio y el firmware
 difieren, manda el firmware. Las ESP A, B y C y la Pantalla hablan solo con el Maestro
-(ESP-NOW): la app no depende de su código.
+(ESP-NOW): la app no depende de su código. Lo único que sale a internet es el
+[asistente](#asistente-de-ia-por-voz-y-texto), y nunca por el Wi-Fi del robot.
 
 ### Firmware v6
 
@@ -126,6 +127,47 @@ Los detalles de red y permisos por versión de Android están en
   Gasta más batería (wake lock parcial); apágalo cuando no haga falta. En Android 13+ pide el
   permiso de notificaciones; sin él la vigilancia sigue guardando el historial, sin avisos.
 
+## Asistente de IA por voz y texto
+
+El botón ✨ de la barra superior abre el asistente. Se le habla con el micrófono, con la
+transcripción en vivo, o se le escribe. Responde en pantalla y en voz alta con el
+`TextToSpeech` del sistema. El altavoz de la cabecera silencia las respuestas, y tocar el
+micrófono corta la voz.
+
+1. **Configuración:**
+   - Crea una clave en [Google AI Studio](https://aistudio.google.com) ("Get API key") y
+     agrégala a `local.properties`, que no se versiona:
+
+     ```properties
+     fertitrack.gemini.apiKey=<tu clave de Gemini>
+     ```
+
+     Sin clave, el panel lo avisa y no llama a Gemini.
+   - El modelo está en `gradle.properties` (`fertitrack.gemini.modelo`, por defecto
+     `gemini-3.6-flash`). Si el asistente dice que el modelo no existe, cambia el nombre aquí.
+   - La clave queda dentro del APK, y quien tenga el APK puede extraerla. Para uso propio está
+     bien. Para distribuir la app conviene un servidor intermedio o Firebase AI Logic con
+     App Check.
+2. **Qué sabe:**
+   - la pantalla en la que estás;
+   - el estado del robot en vivo o, sin conexión, la última lectura guardada y de cuándo es;
+   - las zonas, las últimas mediciones, el último riego y si las rutinas se pueden iniciar.
+3. **Qué puede hacer:**
+   - llevarte a una pantalla;
+   - abrir la confirmación de un ciclo, un sensado o una fertilización, que tú confirmas;
+   - buscar en internet (clima, cultivos, fertilizantes) con la búsqueda de Google de Gemini.
+     En ese caso muestra las fuentes y las sugerencias de búsqueda de Google sin modificarlas,
+     como exigen sus condiciones.
+
+   Nunca envía órdenes al robot ni puede detenerlo: para eso está DETENER, que sigue visible
+   debajo del panel.
+4. **Internet:** el Wi-Fi del robot no da internet. Gemini sale por la red por defecto del
+   teléfono: datos móviles u otro Wi-Fi.
+   - Sin internet, el asistente lo avisa y la app sigue guardando las lecturas. Al volver la
+     conexión responde con "según la última lectura, de hace…".
+   - El reconocimiento de voz es el del sistema. Sin internet solo funciona si el teléfono
+     tiene el paquete de español sin conexión.
+
 ## Compilar y probar desde la terminal
 
 ```bash
@@ -152,6 +194,7 @@ MVVM con `StateFlow`, inyección manual (`di/AppContainer`) y una sola pantalla 
 | `domain.analisis` | Análisis automático por reglas (insights). |
 | `data` | Cliente HTTP del Maestro, sondeo con backoff, enlace con la red del AP, seguimiento y guardado del historial, exportación CSV. |
 | `vigilancia` | Servicio en primer plano, notificaciones y sus textos. |
+| `asistente` | Asistente de IA: contexto, prompt, etiquetas de acción, `AsistenteViewModel`; en `gemini`, el cliente REST; en `voz`, `SpeechRecognizer` y `TextToSpeech`. |
 | `simulador` | Interfaz del simulador; en `src/debug`, el `FakeFertiTrackServer`. |
 | `ui` | `MainViewModel`, tema, pantallas (Inicio, Zonas, Gráficas, Control, Análisis y Conexión). |
 
@@ -191,6 +234,11 @@ MVVM con `StateFlow`, inyección manual (`di/AppContainer`) y una sola pantalla 
 | JUnit 4 y coroutines-test | Pruebas unitarias con tiempo virtual. |
 | Robolectric y compose ui-test | Pruebas de UI y capturas en la JVM, sin emulador. |
 
+El asistente no añade dependencias: llama a Gemini por REST con OkHttp y
+kotlinx.serialization, y usa la voz del sistema (`SpeechRecognizer` y `TextToSpeech`). El
+SDK "Google AI client SDK for Android" está descontinuado, y su reemplazo (Firebase AI Logic)
+exige un proyecto de Firebase.
+
 ## Estado
 
 - **Fase 1:** paridad con la app de escritorio usando el contrato real del firmware.
@@ -200,6 +248,8 @@ MVVM con `StateFlow`, inyección manual (`di/AppContainer`) y una sola pantalla 
   del Maestro y la app lo lee.
 - **Fase 3:** historial guardado, exportación a CSV y avisos en segundo plano (sin
   dependencias nuevas: notificaciones con `core-ktx`, almacenamiento en JSON).
+- **Asistente de IA:** voz y texto con Gemini, búsqueda en Google y respuestas con los
+  últimos datos guardados cuando no hay conexión con el robot.
 
 Lo que el firmware no ofrece y convendría añadir está en
 [docs/PETICIONES_FIRMWARE.md](docs/PETICIONES_FIRMWARE.md).
