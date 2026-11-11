@@ -19,6 +19,18 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <!-- Avisos de fallas, riegos y conexión (Android 13+: lo pide la UI al activar la vigilancia). -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Asistente: hablarle por voz (lo pide la UI al tocar el micrófono). -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <!-- Android 11+: sin declararlos, la app no ve el reconocimiento de voz ni la síntesis de voz. -->
+    <queries>
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
+    </queries>
 
     <application
         android:name=".FertiTrackApp"
