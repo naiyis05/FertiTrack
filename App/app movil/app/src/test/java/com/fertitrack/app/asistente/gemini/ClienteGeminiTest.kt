@@ -3,6 +3,7 @@ package com.fertitrack.app.asistente.gemini
 import java.net.ServerSocket
 import kotlin.concurrent.thread
 import kotlinx.coroutines.runBlocking
+import okhttp3.OkHttpClient
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -15,6 +16,20 @@ class ClienteGeminiTest {
     fun sinClaveNoLlamaALaRed() = runBlocking {
         val r = ClienteGemini("", "gemini-x", urlBase = "http://127.0.0.1:1").responder(pregunta, "contexto")
         assertEquals(TipoFallo.SIN_CLAVE, (r as RespuestaCerebro.Fallo).tipo)
+    }
+
+    @Test
+    fun sinRedConInternetAvisaSinLlamar() = runBlocking {
+        // Unido solo al AP del robot, el DNS de Google no contesta: no hay que esperar a que venza.
+        var llamadas = 0
+        val http = OkHttpClient.Builder().addInterceptor { cadena ->
+            llamadas++
+            cadena.proceed(cadena.request())
+        }.build()
+        val r = ClienteGemini("clave", "gemini-x", urlBase = "http://127.0.0.1:1", http = http, hayInternet = { false })
+            .responder(pregunta, "contexto")
+        assertEquals(TipoFallo.SIN_INTERNET, (r as RespuestaCerebro.Fallo).tipo)
+        assertEquals(0, llamadas)
     }
 
     @Test

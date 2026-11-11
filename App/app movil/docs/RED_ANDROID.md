@@ -168,8 +168,10 @@ Revisadas en la v5.3 y confirmadas en la v6 (`FertiTrack_Maestro_v6.ino`).
 
 - **Por dónde sale:** `ClienteGemini` usa un `OkHttpClient` propio, sin la `SocketFactory` del
   robot, así que va por la red por defecto del teléfono (datos móviles u otro Wi-Fi). El Wi-Fi
-  `FertiTrack_AP` no da internet: si es la única red, Gemini falla rápido con "Sin internet",
-  y el sondeo del robot no se ve afectado.
+  `FertiTrack_AP` no da internet. Antes de cada pregunta se comprueba que la red por defecto
+  tenga `NET_CAPABILITY_VALIDATED`; si no lo tiene (por ejemplo, el AP unido a mano sin datos
+  móviles), el aviso "Sin internet" es inmediato. Sin esa comprobación, el DNS de Google
+  esperaría al ESP32 hasta vencer el timeout. El sondeo del robot no se ve afectado.
 - **Seguridad de red:** es HTTPS a `generativelanguage.googleapis.com`. La configuración de
   seguridad de red no cambia: solo `192.168.4.1` admite HTTP sin cifrar.
 - **Timeouts y reintentos:** 10 s para conectar y 45 s para leer, porque la búsqueda en Google

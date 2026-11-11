@@ -20,6 +20,9 @@ import okhttp3.Response
 /**
  * Gemini por REST. Sale por la red por defecto del teléfono (datos móviles u otro Wi-Fi):
  * nunca por la del robot, que no da internet. Sin reintentos: la persona vuelve a preguntar.
+ *
+ * [hayInternet] se consulta antes de cada pregunta: unido solo al AP del robot, el DNS no
+ * contesta y la llamada tardaría hasta el timeout en fallar.
  */
 class ClienteGemini(
     private val clave: String,
@@ -27,10 +30,12 @@ class ClienteGemini(
     private val urlBase: String = AsistenteConfig.URL_BASE,
     private val http: OkHttpClient = clientePorDefecto(),
     private val sistema: String = PromptSistema.TEXTO,
+    private val hayInternet: () -> Boolean = { true },
 ) : Cerebro {
 
     override suspend fun responder(historial: List<TurnoChat>, contexto: String): RespuestaCerebro {
         if (clave.isBlank()) return RespuestaCerebro.Fallo(TipoFallo.SIN_CLAVE)
+        if (!hayInternet()) return RespuestaCerebro.Fallo(TipoFallo.SIN_INTERNET, "La red por defecto no tiene internet")
         val url = "$urlBase/models/$modelo:generateContent".toHttpUrlOrNull()
             ?: return RespuestaCerebro.Fallo(TipoFallo.RESPUESTA_RARA, "Dirección de Gemini no válida")
         val peticion = Request.Builder()

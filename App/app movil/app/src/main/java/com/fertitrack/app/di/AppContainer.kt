@@ -3,6 +3,7 @@ package com.fertitrack.app.di
 import android.content.Context
 import com.fertitrack.app.asistente.gemini.Cerebro
 import com.fertitrack.app.asistente.gemini.ClienteGemini
+import com.fertitrack.app.asistente.gemini.redPorDefectoConInternet
 import com.fertitrack.app.config.AsistenteConfig
 import com.fertitrack.app.data.RobotRepository
 import com.fertitrack.app.data.ControlSondeo
@@ -63,5 +64,9 @@ class AppContainer(contexto: Context) {
     val notificador = Notificador(contexto)
 
     /** Gemini para el asistente. Sale por la red por defecto, nunca por la del robot. */
-    val cerebro: Cerebro = ClienteGemini(AsistenteConfig.CLAVE_GEMINI, AsistenteConfig.MODELO)
+    val cerebro: Cerebro = ClienteGemini(
+        clave = AsistenteConfig.CLAVE_GEMINI,
+        modelo = AsistenteConfig.MODELO,
+        hayInternet = { redPorDefectoConInternet(contexto) },
+    )
 }
