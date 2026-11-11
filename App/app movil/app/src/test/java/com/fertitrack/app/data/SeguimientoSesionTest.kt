@@ -1,7 +1,9 @@
 package com.fertitrack.app.data
 
+import com.fertitrack.app.asistente.FotoRobot
 import com.fertitrack.app.data.historial.FuenteDatos
 import com.fertitrack.app.domain.conexion.EstadoConexion
+import com.fertitrack.app.domain.modelo.Actividad
 import com.fertitrack.app.domain.conexion.EstadoRed
 import com.fertitrack.app.domain.modelo.EstadoMaquina
 import com.fertitrack.app.domain.modelo.EstadoRobot
@@ -21,6 +23,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -38,7 +41,12 @@ class SeguimientoSesionTest {
     @After
     fun limpiar() = ambito.cancel()
 
-    private fun iniciar(almacen: AlmacenEnMemoria) = SeguimientoSesion(repo, tracker, almacen, ambito).also { it.iniciar() }
+    private fun iniciar(
+        almacen: AlmacenEnMemoria,
+        fotos: AlmacenFotoEnMemoria = AlmacenFotoEnMemoria(),
+        repositorio: RepositorioQuieto = repo,
+        trackerUsado: SesionTracker = if (repositorio === repo) tracker else SesionTracker { ahora },
+    ) = SeguimientoSesion(repositorio, trackerUsado, almacen, fotos, ambito) { ahora }.also { it.iniciar() }
 
     private fun medirZona1(pct: Float) {
         ahora += 1_500
@@ -89,6 +97,53 @@ class SeguimientoSesionTest {
         val guardado = almacen.guardado.getValue(FuenteDatos.ROBOT)
         assertEquals(1, guardado.riegosCompletados)
         assertEquals(false, guardado.sugerirFertilizar)
+    }
+
+    @Test
+    fun fotoSeGuardaAlCambiarYSeRestaura() {
+        val fotos = AlmacenFotoEnMemoria()
+        val seguimiento = iniciar(AlmacenEnMemoria(), fotos)
+        // RepositorioQuieto arranca con un robot en espera: primera foto guardada.
+        assertEquals(1, fotos.escrituras.size)
+        assertEquals(EstadoMaquina.ESPERANDO, seguimiento.ultimaFoto.value?.estado)
+        assertEquals(1_000L, seguimiento.ultimaFoto.value?.momentoMs)
+
+        // Cambia algo que la foto no guarda: se actualiza en memoria, no en disco.
+        ahora += 10_000
+        repo.estado.value = robot(actividad = Actividad.EN_MOVIMIENTO)
+        assertEquals(1, fotos.escrituras.size)
+        assertEquals(11_000L, seguimiento.ultimaFoto.value?.momentoMs)
+
+        // Mismo contenido, pero pasaron 5 min desde la última escritura: se guarda.
+        ahora += 5 * 60_000
+        repo.estado.value = robot()
+        assertEquals(2, fotos.escrituras.size)
+
+        // Contenido distinto: se guarda enseguida.
+        ahora += 1_500
+        repo.estado.value = robot(EstadoMaquina.SENSADO_AVANZANDO, ModoRutina.SENSADO, zona = 1)
+        assertEquals(3, fotos.escrituras.size)
+        assertEquals(EstadoMaquina.SENSADO_AVANZANDO, fotos.guardado.getValue(FuenteDatos.ROBOT).estado)
+
+        // Al volver a abrir la app sin datos del robot, arranca con la foto guardada.
+        val sinDatos = RepositorioQuieto().apply { estado.value = null }
+        val otra = iniciar(AlmacenEnMemoria(), fotos, sinDatos)
+        assertEquals(fotos.guardado.getValue(FuenteDatos.ROBOT), otra.ultimaFoto.value)
+    }
+
+    @Test
+    fun cambioDeFuenteCargaSuFoto() {
+        val fotoSimulador = FotoRobot.de(robot(EstadoMaquina.RIEGO_AVANZANDO, ModoRutina.RIEGO, zona = 2), 500L)
+        val fotos = AlmacenFotoEnMemoria(mapOf(FuenteDatos.SIMULADOR to fotoSimulador))
+        repo.estado.value = null
+        val seguimiento = iniciar(AlmacenEnMemoria(), fotos)
+        assertNull(seguimiento.ultimaFoto.value)
+
+        repo.usandoSimulador.value = true
+        assertEquals(fotoSimulador, seguimiento.ultimaFoto.value)
+
+        repo.usandoSimulador.value = false
+        assertNull(seguimiento.ultimaFoto.value)
     }
 
     @Test

@@ -40,6 +40,9 @@ android {
         buildConfigField("String", "ROBOT_IP", literalJava(propiedadRobot("fertitrack.robot.ip", "192.168.4.1")))
         buildConfigField("String", "AP_SSID", literalJava(propiedadRobot("fertitrack.ap.ssid", "FertiTrack_AP")))
         buildConfigField("String", "AP_PASSWORD", literalJava(propiedadRobot("fertitrack.ap.password")))
+        // Asistente: la clave de Gemini, como la del AP, solo en local.properties.
+        buildConfigField("String", "GEMINI_API_KEY", literalJava(propiedadRobot("fertitrack.gemini.apiKey")))
+        buildConfigField("String", "GEMINI_MODELO", literalJava(propiedadRobot("fertitrack.gemini.modelo", "gemini-3.6-flash")))
     }
 
     signingConfigs {

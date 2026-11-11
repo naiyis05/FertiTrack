@@ -3,8 +3,6 @@ package com.fertitrack.app.data.historial
 import com.fertitrack.app.domain.sesion.ResumenSesion
 import java.io.File
 import java.io.IOException
-import java.nio.file.Files
-import java.nio.file.StandardCopyOption
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -41,16 +39,7 @@ class AlmacenHistorialArchivo(private val carpeta: File) : AlmacenHistorial {
     override suspend fun guardar(fuente: FuenteDatos, resumen: ResumenSesion) {
         withContext(Dispatchers.IO) {
             escritura.withLock {
-                try {
-                    carpeta.mkdirs()
-                    val destino = archivo(fuente)
-                    val temporal = File(carpeta, "${destino.name}.tmp")
-                    temporal.writeText(json.encodeToString(HistorialDto.serializer(), HistorialDto.desde(resumen)))
-                    Files.move(temporal.toPath(), destino.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
-                } catch (e: IOException) {
-                    // Sin espacio o sin permiso: el historial sigue en memoria y se reintenta
-                    // con el próximo cambio. Nunca debe tumbar el seguimiento del robot.
-                }
+                escribirAtomico(archivo(fuente), json.encodeToString(HistorialDto.serializer(), HistorialDto.desde(resumen)))
             }
         }
     }

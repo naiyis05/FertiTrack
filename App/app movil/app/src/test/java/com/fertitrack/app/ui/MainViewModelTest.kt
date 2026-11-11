@@ -2,6 +2,7 @@ package com.fertitrack.app.ui
 
 import androidx.lifecycle.viewModelScope
 import com.fertitrack.app.data.AlmacenEnMemoria
+import com.fertitrack.app.data.AlmacenFotoEnMemoria
 import com.fertitrack.app.data.ControlSondeo
 import com.fertitrack.app.data.RobotRepository
 import com.fertitrack.app.data.SeguimientoSesion
@@ -60,7 +61,8 @@ class MainViewModelTest {
         repo = RepositorioFalso()
         simulador = SimuladorFalso()
         ambito = CoroutineScope(Dispatchers.Main)
-        val sesion = SeguimientoSesion(repo, SesionTracker { 10_000L }, almacen, ambito).also { it.iniciar() }
+        val sesion = SeguimientoSesion(repo, SesionTracker { 10_000L }, almacen, AlmacenFotoEnMemoria(), ambito) { 10_000L }
+            .also { it.iniciar() }
         val exportador = Exportador { destino, contenido ->
             exportados += destino to contenido
             exportacionCorrecta

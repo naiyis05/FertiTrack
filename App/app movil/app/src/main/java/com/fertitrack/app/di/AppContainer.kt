@@ -7,6 +7,7 @@ import com.fertitrack.app.data.RobotRepositoryImpl
 import com.fertitrack.app.data.SeguimientoSesion
 import com.fertitrack.app.data.exportar.Exportador
 import com.fertitrack.app.data.exportar.ExportadorAndroid
+import com.fertitrack.app.data.historial.AlmacenFotoArchivo
 import com.fertitrack.app.data.historial.AlmacenHistorialArchivo
 import com.fertitrack.app.domain.sesion.SesionTracker
 import com.fertitrack.app.data.red.EnlaceRed
@@ -45,6 +46,7 @@ class AppContainer(contexto: Context) {
         repositorio = repositorio,
         tracker = SesionTracker(),
         almacen = AlmacenHistorialArchivo(contexto.filesDir),
+        almacenFoto = AlmacenFotoArchivo(contexto.filesDir),
         ambito = ambitoApp,
     ).also { it.iniciar() }
 
