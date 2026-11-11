@@ -1,8 +1,18 @@
 package com.fertitrack.app.ui
 
+import android.Manifest
+import android.content.pm.PackageManager
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -10,6 +20,8 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -22,6 +34,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.ShowChart
+import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Error
@@ -65,13 +78,24 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
+import com.fertitrack.app.asistente.AccionAsistente
+import com.fertitrack.app.asistente.AccionesAsistente
+import com.fertitrack.app.asistente.AccionesAsistenteNulas
+import com.fertitrack.app.asistente.Destino
+import com.fertitrack.app.asistente.EstadoAsistente
 import com.fertitrack.app.domain.conexion.EstadoRed
 import com.fertitrack.app.ui.componentes.BarraParada
+import com.fertitrack.app.ui.componentes.PanelAsistente
+import com.fertitrack.app.ui.componentes.TAG_BOTON_ASISTENTE
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 import com.fertitrack.app.ui.componentes.ChipConexion
 import com.fertitrack.app.ui.componentes.Formatos
 import com.fertitrack.app.ui.componentes.FranjaAviso
@@ -84,6 +108,9 @@ import com.fertitrack.app.ui.pantallas.PantallaInicio
 import com.fertitrack.app.ui.pantallas.PantallaZonas
 import com.fertitrack.app.ui.tema.FertiTrackTema
 
+/** Desde este ancho (tablet en horizontal) el asistente es un panel lateral. */
+private val ANCHO_PANEL_LATERAL = 840.dp
+
 const val TAG_FRANJA_DATOS = "franja_datos"
 const val TAG_FRANJA_PERMISOS = "franja_permisos"
 const val TAG_VOLVER = "boton_volver"
@@ -92,11 +119,21 @@ fun tagPestana(pestana: Pestana): String = "pestana_${pestana.name}"
 /**
  * Raíz de la interfaz: barra superior con el chip de conexión, contenido de la pestaña,
  * barra DETENER siempre visible y navegación inferior. Sin estado propio salvo la pestaña
- * elegida y si se muestra Conexión: todo lo demás llega en [estado].
+ * elegida y si se muestra Conexión: todo lo demás llega en [estado] y en [asistente].
  */
 @Composable
-fun FertiTrackPantalla(estado: UiState, acciones: AccionesUi, modifier: Modifier = Modifier) {
-    FertiTrackPantalla(estado, acciones, modifier, pestanaInicial = Pestana.INICIO, conexionInicial = false)
+fun FertiTrackPantalla(
+    estado: UiState,
+    acciones: AccionesUi,
+    modifier: Modifier = Modifier,
+    asistente: EstadoAsistente = EstadoAsistente(),
+    accionesAsistente: AccionesAsistente = AccionesAsistenteNulas,
+    eventosAsistente: Flow<AccionAsistente> = emptyFlow(),
+) {
+    FertiTrackPantalla(
+        estado, acciones, modifier, pestanaInicial = Pestana.INICIO, conexionInicial = false,
+        asistente = asistente, accionesAsistente = accionesAsistente, eventosAsistente = eventosAsistente,
+    )
 }
 
 /** Variante para pruebas y capturas: permite abrir directamente una pestaña o Conexión. */
@@ -108,6 +145,9 @@ internal fun FertiTrackPantalla(
     modifier: Modifier,
     pestanaInicial: Pestana,
     conexionInicial: Boolean,
+    asistente: EstadoAsistente = EstadoAsistente(),
+    accionesAsistente: AccionesAsistente = AccionesAsistenteNulas,
+    eventosAsistente: Flow<AccionAsistente> = emptyFlow(),
 ) {
     var pestana by rememberSaveable { mutableStateOf(pestanaInicial) }
     var verConexion by rememberSaveable { mutableStateOf(conexionInicial) }
@@ -116,9 +156,50 @@ internal fun FertiTrackPantalla(
 
     EfectoMensajes(estado.mensaje, snackbar, acciones::mensajeMostrado)
 
-    // Un solo manejador de "atrás": primero cancela la confirmación abierta, luego cierra Conexión.
-    BackHandler(enabled = estado.confirmacion != null || verConexion) {
-        if (estado.confirmacion != null) acciones.cancelarConfirmacion() else verConexion = false
+    // Un solo manejador de "atrás": la confirmación abierta, luego el asistente, luego Conexión.
+    BackHandler(enabled = estado.confirmacion != null || asistente.abierto || verConexion) {
+        when {
+            estado.confirmacion != null -> acciones.cancelarConfirmacion()
+            asistente.abierto -> accionesAsistente.cerrar()
+            else -> verConexion = false
+        }
+    }
+
+    // El asistente sabe en qué pantalla está la persona (sugerencias y contexto).
+    LaunchedEffect(pestana, verConexion) {
+        accionesAsistente.pantallaActual(if (verConexion) Destino.CONEXION else Destino.valueOf(pestana.name))
+    }
+    // Lo que pide una respuesta: ir a una pantalla o abrir la confirmación de una rutina.
+    // La confirmación es la misma de los botones: nada se envía sin que la persona confirme.
+    val accionesActuales by rememberUpdatedState(acciones)
+    val asistenteActual by rememberUpdatedState(accionesAsistente)
+    LaunchedEffect(eventosAsistente) {
+        eventosAsistente.collect { accion ->
+            when (accion) {
+                is AccionAsistente.IrA -> if (accion.destino == Destino.CONEXION) {
+                    verConexion = true
+                } else {
+                    pestana = Pestana.valueOf(accion.destino.name)
+                    verConexion = false
+                }
+                is AccionAsistente.ProponerRutina -> {
+                    pestana = Pestana.CONTROL
+                    verConexion = false
+                    asistenteActual.cerrar()
+                    accionesActuales.pedirConfirmacion(AccionConfirmable.Iniciar(accion.rutina.modo))
+                }
+            }
+        }
+    }
+
+    val contexto = LocalContext.current
+    val pedirMicrofono = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { concedido ->
+        accionesAsistente.permisoMicrofono(concedido)
+        if (concedido) accionesAsistente.alternarMicrofono()
+    }
+    val onMicrofono = {
+        val concedido = ContextCompat.checkSelfPermission(contexto, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+        if (concedido || asistente.escuchando) accionesAsistente.alternarMicrofono() else pedirMicrofono.launch(Manifest.permission.RECORD_AUDIO)
     }
 
     val tecladoVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
@@ -132,6 +213,7 @@ internal fun FertiTrackPantalla(
                 verConexion = verConexion,
                 onAbrirConexion = { verConexion = true },
                 onVolver = { verConexion = false },
+                onAsistente = accionesAsistente::abrir,
             )
         },
         bottomBar = {
@@ -151,12 +233,14 @@ internal fun FertiTrackPantalla(
         },
         containerColor = MaterialTheme.colorScheme.background,
     ) { relleno ->
-        Box(
+        BoxWithConstraints(
             Modifier
                 .fillMaxSize()
                 .padding(relleno)
                 .consumeWindowInsets(relleno),
         ) {
+            val anchoContenido = maxWidth
+            val altoContenido = maxHeight
             if (verConexion) {
                 PantallaConexion(estado, acciones)
             } else {
@@ -169,6 +253,23 @@ internal fun FertiTrackPantalla(
                         Pestana.ANALISIS -> PantallaAnalisis(estado, acciones)
                     }
                 }
+            }
+            // El asistente también va dentro del contenido: la barra DETENER sigue debajo, visible.
+            AnimatedVisibility(
+                visible = asistente.abierto,
+                enter = slideInVertically { it / 3 } + fadeIn(),
+                exit = slideOutVertically { it / 3 } + fadeOut(),
+                modifier = Modifier.align(if (anchoContenido >= ANCHO_PANEL_LATERAL) Alignment.CenterEnd else Alignment.BottomCenter),
+            ) {
+                val ancho = if (anchoContenido >= ANCHO_PANEL_LATERAL) Modifier.width(420.dp) else Modifier.fillMaxWidth()
+                // Con el teclado abierto el contenido se achica: entonces el panel lo ocupa todo.
+                val alto = if (anchoContenido >= ANCHO_PANEL_LATERAL || tecladoVisible) altoContenido else altoContenido * 0.62f
+                PanelAsistente(
+                    estado = asistente,
+                    acciones = accionesAsistente,
+                    onMicrofono = onMicrofono,
+                    modifier = ancho.height(alto).padding(8.dp),
+                )
             }
             // Dentro del contenido: las barras superior e inferior siguen visibles y pulsables.
             OverlayConfirmacion(
@@ -187,6 +288,7 @@ private fun BarraSuperior(
     verConexion: Boolean,
     onAbrirConexion: () -> Unit,
     onVolver: () -> Unit,
+    onAsistente: () -> Unit,
 ) {
     val colores = FertiTrackTema.colores
     Column {
@@ -207,6 +309,9 @@ private fun BarraSuperior(
                 }
             },
             actions = {
+                IconButton(onClick = onAsistente, modifier = Modifier.testTag(TAG_BOTON_ASISTENTE)) {
+                    Icon(Icons.Rounded.AutoAwesome, contentDescription = "Asistente", tint = MaterialTheme.colorScheme.primary)
+                }
                 if (!verConexion) {
                     ChipConexion(
                         conexion = estado.conexion,

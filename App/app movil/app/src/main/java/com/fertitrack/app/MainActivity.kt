@@ -7,6 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.fertitrack.app.asistente.AsistenteViewModel
 import com.fertitrack.app.ui.FertiTrackPantalla
 import com.fertitrack.app.ui.MainViewModel
 import com.fertitrack.app.ui.tema.FertiTrackTema
@@ -14,6 +15,7 @@ import com.fertitrack.app.ui.tema.FertiTrackTema
 class MainActivity : ComponentActivity() {
 
     private val viewModel: MainViewModel by viewModels { MainViewModel.Factory }
+    private val asistente: AsistenteViewModel by viewModels { AsistenteViewModel.Factory }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -21,7 +23,14 @@ class MainActivity : ComponentActivity() {
         setContent {
             FertiTrackTema {
                 val estado by viewModel.ui.collectAsStateWithLifecycle()
-                FertiTrackPantalla(estado = estado, acciones = viewModel)
+                val estadoAsistente by asistente.estado.collectAsStateWithLifecycle()
+                FertiTrackPantalla(
+                    estado = estado,
+                    acciones = viewModel,
+                    asistente = estadoAsistente,
+                    accionesAsistente = asistente,
+                    eventosAsistente = asistente.eventos,
+                )
             }
         }
     }

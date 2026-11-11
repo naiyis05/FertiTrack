@@ -11,6 +11,14 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onRoot
+import com.fertitrack.app.asistente.AccionAsistente
+import com.fertitrack.app.asistente.Destino
+import com.fertitrack.app.asistente.EstadoAsistente
+import com.fertitrack.app.asistente.MensajeChat
+import com.fertitrack.app.asistente.Sugerencias
+import com.fertitrack.app.asistente.TextosAsistente
+import com.fertitrack.app.asistente.gemini.Fuente
+import com.fertitrack.app.asistente.gemini.TipoFallo
 import com.fertitrack.app.ui.FertiTrackPantalla
 import com.fertitrack.app.ui.Pestana
 import com.fertitrack.app.ui.UiState
@@ -49,6 +57,29 @@ class CapturasPantallas {
         val conexion: Boolean = false,
         /** Hora del cielo de Zonas. */
         val hora: LocalDateTime = LocalDateTime.of(2026, 10, 27, 9, 41),
+        val asistente: EstadoAsistente = EstadoAsistente(),
+    )
+
+    private val asistenteBase = EstadoAsistente(abierto = true, claveConfigurada = true, vozDisponible = true)
+
+    private val conversacion = asistenteBase.copy(
+        hablando = true,
+        mensajes = listOf(
+            MensajeChat(1, true, "¿Qué zonas están secas?"),
+            MensajeChat(
+                2,
+                false,
+                "Según la lectura en vivo, la zona 2 está seca y las demás húmedas. ¿Quieres que la riegue?",
+                acciones = listOf(AccionAsistente.IrA(Destino.ZONAS)),
+            ),
+            MensajeChat(3, true, "¿Lloverá mañana en Bogotá?"),
+            MensajeChat(
+                4,
+                false,
+                "Mañana se esperan lluvias ligeras por la tarde en Bogotá.",
+                fuentes = listOf(Fuente("ideam.gov.co", "https://ideam.gov.co"), Fuente("clima.com", "https://clima.com")),
+            ),
+        ),
     )
 
     private val principales = listOf(
@@ -59,6 +90,7 @@ class CapturasPantallas {
         Escena("analisis", EstadosMuestra.conectadoEspera, Pestana.ANALISIS),
         Escena("conexion_permisos", EstadosMuestra.permisosFaltantes, conexion = true),
         Escena("confirmacion", EstadosMuestra.conConfirmacion, Pestana.CONTROL),
+        Escena("asistente_conversacion", EstadosMuestra.riegoEnCurso, Pestana.ZONAS, asistente = conversacion),
     )
 
     private val adicionales = listOf(
@@ -72,6 +104,28 @@ class CapturasPantallas {
         Escena("control_riego_en_curso", EstadosMuestra.riegoEnCurso, Pestana.CONTROL),
         Escena("graficas_vacia", EstadosMuestra.sinDatos, Pestana.GRAFICAS),
         Escena("conexion_simulador", EstadosMuestra.simulador, conexion = true),
+        Escena(
+            "asistente_sugerencias",
+            EstadosMuestra.conectadoEspera,
+            Pestana.CONTROL,
+            asistente = asistenteBase.copy(sugerencias = Sugerencias.para(Destino.CONTROL, EstadosMuestra.robotEspera)),
+        ),
+        Escena(
+            "asistente_escuchando",
+            EstadosMuestra.conectadoEspera,
+            asistente = asistenteBase.copy(escuchando = true, nivelVoz = 0.6f, transcripcion = "cómo activo el riego autom"),
+        ),
+        Escena(
+            "asistente_sin_clave",
+            EstadosMuestra.sinDatos,
+            asistente = asistenteBase.copy(
+                claveConfigurada = false,
+                mensajes = listOf(
+                    MensajeChat(1, true, "hola"),
+                    MensajeChat(2, false, TextosAsistente.fallo(TipoFallo.SIN_INTERNET), esError = true),
+                ),
+            ),
+        ),
     )
 
     /** El cielo de Zonas en cada fase del día (a la hora de muestra de cada una). */
@@ -107,6 +161,7 @@ class CapturasPantallas {
                             Modifier,
                             pestanaInicial = actual.pestana,
                             conexionInicial = actual.conexion,
+                            asistente = actual.asistente,
                         )
                     }
                 }
