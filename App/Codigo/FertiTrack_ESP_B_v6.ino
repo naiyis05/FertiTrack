@@ -1,119 +1,126 @@
 /*
   =========================================================================
-  FertiTrack_ESP_B_v5.5.ino — ESP_B (sensor de humedad + solenoide JF-0530B)
-  Compañero de FertiTrack_Maestro_v5.5 y ESP_A_v5.5
+  FertiTrack_ESP_B_v5.8.ino — ESP_B (sensor de humedad + solenoide JF-0530B)
   Placa : ESP32 Dev Module — Core Espressif 3.x.x
   MAC de ESTE ESP32 (ESP_B) : CC:DB:A7:34:A0:FC
-  MAC del MAESTRO            : 20:50:0D:10:1E:E0
+  MAC del MAESTRO (la vieja, AÚN SIN CAMBIAR): 20:50:0D:10:1E:E0
   =========================================================================
 
   -------------------------------------------------------------------
-  DIAGNÓSTICO DEL PROBLEMA EN v5.3 — ¿POR QUÉ SE SOBRECALENTABA?
+  QUÉ CAMBIA EN v5.8 (respecto a v5.7) — DRIVER MOSFET
   -------------------------------------------------------------------
-  En v5.3 la lógica era:
-     EB_REPOSO  → relay ACTIVADO (LOW) → solenoide ENERGIZADO → pistón ARRIBA
-     Medir      → relay APAGADO (HIGH) → solenoide OFF → resorte baja el pistón
-     Terminar   → relay ACTIVADO (LOW) → solenoide ENERGIZADO → pistón ARRIBA
+  1) Nueva opción DRIVER_MOSFET (true por defecto). Con MOSFET de nivel
+     lógico la lógica es la CONTRARIA al relé:
+         GPIO26 = HIGH → solenoide ENERGIZADO
+         GPIO26 = LOW  → solenoide apagado (pin siempre en OUTPUT/LOW)
+     Si vuelves al módulo de relé azul, pon DRIVER_MOSFET false.
+  2) Los tiempos largos de v5.7 NO ayudaron (el problema era eléctrico) y
+     solo calientan la bobina: vuelven a 800 ms de inserción y 800 ms de
+     retracción (ON por ciclo ≈ 3.3 s). Pulso de prueba "p": 1.5 s.
+     Los tiempos guardados en NVS se reinician una vez (VERSION_NVS=58).
+  3) Todo lo demás igual: sin enfriamiento, vigilante de 8 s, motivo del
+     reinicio al arrancar, prueba de banco por Serial.
 
-  El solenoide quedaba ENERGIZADO PERMANENTEMENTE en reposo para mantener
-  el pistón arriba (posición segura para viajar). Como el JF-0530B es de
-  uso INTERMITENTE (ciclo de trabajo <30 %), la bobina actúa como
-  resistencia de calentamiento si se deja con corriente constante:
-  en pocos minutos llega a temperaturas que funden el esmalte del alambre.
-
-  -------------------------------------------------------------------
-  SOLUCIÓN EN v5.5 — MODO PULSO
-  -------------------------------------------------------------------
-  El solenoide se energiza ÚNICAMENTE durante los ~2-3 s que dura el
-  ciclo de medición. El reposo es siempre con relay APAGADO (solenoide OFF).
-
-  NUEVA LÓGICA:
-     EB_REPOSO       → relay OFF → solenoide OFF → posición de reposo (resorte)
-     Medir recibido:
-     EB_INSERTANDO   → relay ON  → solenoide ON  → pistón actúa (baja o sube)
-     EB_MIDIENDO     → relay ON  → solenoide ON  → toma muestras ADC
-     EB_RETRACTANDO  → relay OFF → solenoide OFF → resorte retracta
-     EB_REPOSO       → relay OFF → envía HUMEDAD al Maestro
-
-  Tiempo total energizado por ciclo: ~2.5 s.
-  Intervalo entre mediciones (ciclo completo): decenas de minutos.
-  Ciclo de trabajo real: << 1 % → solenoide frío siempre.
+  CONEXIÓN DEL MOSFET (IRLZ44N, pines mirando de frente: G-D-S)
+     GPIO26 → resistencia 220 Ω → G (compuerta)
+     G → resistencia 10 kΩ → GND      (arranca siempre apagado)
+     S (source) → GND común (GND del buck y GND del ESP32 unidos)
+     D (drain)  → cable NEGRO del solenoide
+     Cable ROJO del solenoide → +6 V del buck
+     Diodo 1N4007 en antiparalelo en los bornes del solenoide
+     (banda al rojo/+6 V). Condensador 470–2200 µF en la línea de 6 V.
 
   -------------------------------------------------------------------
-  NOTA SOBRE LA DIRECCIÓN DEL PISTÓN
+  CAMBIOS ANTERIORES — v5.7 (respecto a v5.6)
   -------------------------------------------------------------------
-  El JF-0530B tiene retorno por resorte. Con la bobina OFF el resorte
-  lleva el émbolo a la posición de REPOSO natural. Hay dos posibles
-  montajes según cómo esté orientado el solenoide:
+  1) SE QUITÓ la espera de enfriamiento entre ciclos. Se pueden mandar
+     "p" / "m" / MEDIR seguidos. Se conserva SOLO el vigilante de relé
+     encendido (TIEMPO_ON_MAX_MS) para que un fallo nunca deje el
+     solenoide energizado de forma indefinida.
 
-  MONTAJE A — Resorte sube, corriente baja (el más común con este sensor):
-    OFF (reposo)  → resorte → pistón ARRIBA → sensor NO toca el suelo ✅
-    ON  (medir)   → corriente → pistón BAJA → sensor ENTRA en el suelo ✅
-    → SOLENOIDE_BAJA_AL_ACTIVAR = true  ← (valor por defecto del código)
+  2) TIEMPOS MÁS LARGOS (por defecto):
+        inserción 1500 ms (antes 500)    estabilizar 700 ms
+        muestreo  1800 ms                retracción  1500 ms (antes 500)
+        → relé ON por ciclo ≈ 4.0 s      vigilante: 8 s (antes 5 s)
+     Pulso de prueba "p": 3 s (antes 1 s). En el Monitor Serie:
+        '+' sube 0.5 s el pulso de prueba, '-' lo baja 0.5 s (0.5–6 s).
+     Al subir de versión, los tiempos guardados en NVS se reinician a
+     estos valores una sola vez (si el Maestro los calibra luego con
+     SOL_*, se vuelven a guardar).
 
-  MONTAJE B — Resorte baja, corriente sube (el que tenía v5.3):
-    OFF (reposo)  → resorte → pistón ABAJO → sensor roza el suelo 🤔
-    ON  (medir)   → corriente → pistón SUBE → sensor SALE del suelo
-    → SOLENOIDE_BAJA_AL_ACTIVAR = false
-    (en este montaje la lectura se toma durante el intervalo de BAJAR,
-     es decir, con el relay OFF. El código lo gestiona automáticamente.)
+  3) DIAGNÓSTICO DEL REINICIO: al arrancar imprime el MOTIVO del reset.
+        BROWNOUT → el 3.3 V del ESP32 cayó (problema de alimentación)
+        POWERON  → la placa perdió y recuperó la alimentación por completo
+        PANIC/WDT→ error de software
+     Si tras cada "p" ves BROWNOUT o POWERON, el problema es eléctrico,
+     no del código (ver abajo).
 
-  Ajusta la constante SOLENOIDE_BAJA_AL_ACTIVAR según tu montaje.
-  Si el motor funciona al revés de lo que esperas, cámbiala.
+  4) Ya no se imprime por Serial antes de Serial.begin() (eso producía
+     texto cortado como "[SOL] OFF (resorte sube el senso...").
 
   -------------------------------------------------------------------
-  PROTOCOLO v5.5 — SIN CAMBIOS RESPECTO A v5.3
+  SI EL ESP32 SE REINICIA AL ACTIVAR EL SOLENOIDE (causa eléctrica)
   -------------------------------------------------------------------
-  Maestro → ESP_B : "MEDIR"  (0)      → ciclo completo de medición
-                    "STOP"            → emergencia, solenoide OFF inmediato
-                    "RESET"           → vuelve a REPOSO, solenoide OFF
-                    "SOL_INS" (ms)    → ajusta TIEMPO_INSERCION_MS  [NUEVO v5.5]
-                    "SOL_EST" (ms)    → ajusta TIEMPO_ESTABILIZAR_MS [NUEVO v5.5]
-                    "SOL_RET" (ms)    → ajusta TIEMPO_RETRACCION_MS  [NUEVO v5.5]
-                    "SOL_MED" (ms)    → ajusta TIEMPO_MUESTREO_MS    [NUEVO v5.5]
-  ESP_B  → Maestro : "HUMEDAD" (ADC promedio 0-4095)
+  El solenoide pide ~1 A de golpe y al soltarlo genera un pico de
+  voltaje inverso. Si comparte alimentación o cables de GND con el ESP32:
+    - La alimentación cae (BROWNOUT) o el USB del PC se reinicia
+      ("Not connected" en el Monitor Serie).
+    - Con el voltaje caído, el solenoide tampoco tiene fuerza: por eso
+      solo recorre una fracción de la carrera.
+  Soluciones, de más a menos importante:
+    a) Diodo 1N4007 EN ANTIPARALELO directo en los bornes del solenoide
+       (banda al rojo/+6 V). Sin él, el pico reinicia el ESP32.
+    b) El ESP32 por su USB, y el buck/solenoide desde una fuente APARTE
+       (adaptador o batería) capaz de dar ≥2 A. Une solo los GND.
+    c) Cables gruesos (≥22 AWG) y empalmados/atornillados para los 6 V y
+       el solenoide. Los Dupont no sirven para 1 A (caen voltaje).
+    d) Condensador de 470–2200 µF cerca del solenoide, en la línea de 6 V.
+    e) Cable USB corto y bueno, directo al PC (sin hub).
 
-  Los comandos SOL_* pueden enviarse desde el Maestro en el futuro para
-  calibrar los tiempos sin recompilar. Se guardan en NVS. ESP_B v5.3
-  nunca los enviaba → compatibilidad OK.
+  -------------------------------------------------------------------
+  CONVENCIÓN MECÁNICA (igual que v5.6)
+  -------------------------------------------------------------------
+         relé OFF (reposo, frío) → sensor ARRIBA, fuera de la tierra
+         relé ON  (pulso)        → sensor ABAJO, dentro de la tierra
+  El sensor va en el extremo del émbolo que SALE cuando se activa el relé.
+
+  -------------------------------------------------------------------
+  PROTOCOLO — SIN CAMBIOS
+  -------------------------------------------------------------------
+  Maestro → ESP_B : "MEDIR", "STOP", "RESET",
+                    "SOL_INS" / "SOL_EST" / "SOL_MED" / "SOL_RET" (ms)
+  ESP_B  → Maestro : "HUMEDAD" (ADC promedio 0-4095, alto = suelo seco)
 
   -------------------------------------------------------------------
   HARDWARE
   -------------------------------------------------------------------
-  PIN_PISTON_RELE    = 26  IN del módulo de relé de 1 canal.
-  PIN_SENSOR_HUMEDAD = 34  ADC1_CH6 (solo lectura). ADC alto = suelo seco.
-  PIN_SENSOR_ALIM    = 25  GPIO que alimenta el VCC del sensor SOLO al medir.
-                           Evita la electrólisis del sensor resistivo.
-                           Poner -1 si el VCC va directo a 3.3V.
+  PIN_PISTON_RELE    = 26  IN del módulo de relé de 1 canal (activo en LOW).
+  PIN_SENSOR_HUMEDAD = 34  ADC1_CH6, sale del AO del módulo LM393.
+  PIN_SENSOR_ALIM    = 25  alimenta el VCC del módulo solo al medir.
 
-  RELÉ:  módulo de relé activo en LOW (típico módulo azul barato).
-         Si el tuyo es activo en HIGH, invierte RELE_ACTIVADO/RELE_APAGADO.
-
-  CONEXIÓN DEL SOLENOIDE (como la tiene el usuario):
-    Cable ROJO del solenoide → 6V directo
-    Cable NEGRO del solenoide → COM del relé (puerto central)
-    Puerto derecho del relé → GND de la fuente
-    (usar NO — normalmente abierto — para que sin corriente = circuito abierto)
-
-  TIMEOUT: el ciclo completo dura ~3-4 s.
-           El Maestro da 12 s (TIMEOUT_B_MS). Margen holgado.
+  CONEXIÓN DEL SOLENOIDE:
+    Rojo del solenoide  → +6 V (salida del buck, medir con multímetro)
+    Negro del solenoide → COM del relé
+    NO del relé         → GND de la fuente de 6 V
   =========================================================================
 */
 
 #include <WiFi.h>
 #include <esp_now.h>
 #include <esp_wifi.h>
+#include <esp_system.h>
 #include <Preferences.h>
 
 // ─────────────────────────────────────────────────────────────────────
 // TIPOS
 // ─────────────────────────────────────────────────────────────────────
 enum EstadoB {
-  EB_REPOSO,          // solenoide OFF, esperando "MEDIR"
-  EB_INSERTANDO,      // solenoide ON: pistón viajando a posición de medición
-  EB_MIDIENDO,        // solenoide ON: sensor en suelo, tomando muestras ADC
-  EB_RETRACTANDO,     // solenoide OFF: resorte retracta el pistón
-  EB_EMERGENCIA       // solenoide OFF, esperando RESET
+  EB_REPOSO,          // relé OFF, esperando "MEDIR"
+  EB_INSERTANDO,      // relé ON: sensor bajando a la tierra
+  EB_MIDIENDO,        // relé ON: sensor en la tierra, tomando muestras
+  EB_RETRACTANDO,     // relé OFF: el resorte sube el sensor
+  EB_PRUEBA,          // relé ON (prueba de banco por Serial)
+  EB_EMERGENCIA       // relé OFF, esperando RESET
 };
 
 typedef struct {
@@ -124,51 +131,60 @@ typedef struct {
 
 struct ComandoRx { char cmd[20]; int param; };
 
+
 // ─────────────────────────────────────────────────────────────────────
 // RED
 // ─────────────────────────────────────────────────────────────────────
 const int CANAL_WIFI = 1;
-uint8_t MAC_MAESTRO[] = {0x20,0x50,0x0D,0x10,0x1E,0xE0};
+uint8_t MAC_MAESTRO[] = {0x6C, 0xC8, 0x40, 0x4E, 0x57, 0xD0};
 
 // ─────────────────────────────────────────────────────────────────────
 // PINES
 // ─────────────────────────────────────────────────────────────────────
-#define PIN_PISTON_RELE    26   // IN del módulo de relé
-#define PIN_SENSOR_HUMEDAD 34   // ADC1 (solo entrada)
-#define PIN_SENSOR_ALIM    25   // VCC del sensor (pon -1 si va directo a 3.3V)
+#define PIN_PISTON_RELE    26
+#define PIN_SENSOR_HUMEDAD 34
+#define PIN_SENSOR_ALIM    25   // pon -1 si el VCC del sensor va directo a 3.3V
 
-// Polaridad del relé (módulos azules baratos = activo en LOW)
-#define RELE_ACTIVADO LOW
-#define RELE_APAGADO  HIGH
+// true  = MOSFET de nivel lógico: HIGH enciende, LOW apaga.
+// false = módulo de relé azul: LOW enciende, y apagado = pin suelto (INPUT).
+#define DRIVER_MOSFET true
 
-// ─────────────────────────────────────────────────────────────────────
-// DIRECCIÓN DEL SOLENOIDE
-// true  → relay ON  = pistón BAJA (entra al suelo), relay OFF = resorte SUBE
-// false → relay ON  = pistón SUBE (sale del suelo),  relay OFF = resorte BAJA
-// ─────────────────────────────────────────────────────────────────────
-const bool SOLENOIDE_BAJA_AL_ACTIVAR = false;
+// (Solo relé) Relé activo en LOW. El "apagado" se hace soltando el pin (INPUT) para
+// que un HIGH de 3.3 V no deje medio activado el optoacoplador de 5 V.
+// Pon false solo si tu módulo corta bien con digitalWrite(HIGH).
+#define RELE_OFF_COMO_ENTRADA true
 
 // ─────────────────────────────────────────────────────────────────────
-// TIEMPOS DEL CICLO DE MEDICIÓN (ajustables desde Maestro vía SOL_*)
-// guardados en NVS. Defaults razonables para JF-0530B a 6V.
+// TIEMPOS DEL CICLO (ajustables desde el Maestro vía SOL_*, en NVS)
 // ─────────────────────────────────────────────────────────────────────
-unsigned long tiempoInsercionMs   = 500;   // ms: solenoide viaja a posición medir
-unsigned long tiempoEstabilizarMs = 700;   // ms: espera contacto estable con suelo
-unsigned long tiempoMuestreoMs    = 1800;  // ms: ventana de toma de muestras
-unsigned long tiempoRetraccionMs  = 500;   // ms: espera que el resorte retracte
+const unsigned long DEF_INSERCION_MS   = 800;
+const unsigned long DEF_ESTABILIZAR_MS = 700;
+const unsigned long DEF_MUESTREO_MS    = 1800;
+const unsigned long DEF_RETRACCION_MS  = 800;
 
-// Total ON: 500+700+1800 = 3000 ms. Total ciclo: ~3.5 s. Maestro: 12 s. ✅
+unsigned long tiempoInsercionMs   = DEF_INSERCION_MS;    // sensor baja
+unsigned long tiempoEstabilizarMs = DEF_ESTABILIZAR_MS;  // contacto estable
+unsigned long tiempoMuestreoMs    = DEF_MUESTREO_MS;     // ventana de muestreo
+unsigned long tiempoRetraccionMs  = DEF_RETRACCION_MS;   // el resorte sube
+
+const uint32_t VERSION_NVS = 58;   // sube este número para forzar valores por defecto
 
 // ─────────────────────────────────────────────────────────────────────
-// PARÁMETROS DE MUESTREO (fijos)
+// SEGURIDAD
 // ─────────────────────────────────────────────────────────────────────
-const unsigned long INTERVALO_MUESTRA_MS = 100;  // una muestra cada 100 ms
-const int           LECTURAS_POR_MUESTRA = 4;    // promedio de 4 lecturas ADC
+const unsigned long TIEMPO_ON_MAX_MS = 8000;   // el relé jamás pasa de esto encendido
+unsigned long pulsoPruebaMs = 1500;            // ajustable con '+' / '-'
+
+// ─────────────────────────────────────────────────────────────────────
+// MUESTREO
+// ─────────────────────────────────────────────────────────────────────
+const unsigned long INTERVALO_MUESTRA_MS = 100;
+const int           LECTURAS_POR_MUESTRA = 4;
 const int           MAX_MUESTRAS         = 64;
-const int           RECORTE_PCT          = 10;   // descarta 10% bajo + 10% alto
+const int           RECORTE_PCT          = 10;
 
 // ─────────────────────────────────────────────────────────────────────
-// NVS: persistencia de tiempos (sobreescrita por comandos SOL_*)
+// NVS
 // ─────────────────────────────────────────────────────────────────────
 Preferences prefs;
 
@@ -179,25 +195,36 @@ void guardarTiemposSolenoide() {
   prefs.putULong("sol_ret", tiempoRetraccionMs);
 }
 void cargarTiemposSolenoide() {
-  tiempoInsercionMs   = prefs.getULong("sol_ins",  500UL);
-  tiempoEstabilizarMs = prefs.getULong("sol_est",  700UL);
-  tiempoMuestreoMs    = prefs.getULong("sol_med", 1800UL);
-  tiempoRetraccionMs  = prefs.getULong("sol_ret",  500UL);
+  if (prefs.getUInt("ver", 0) != VERSION_NVS) {     // primera vez con v5.8
+    tiempoInsercionMs   = DEF_INSERCION_MS;
+    tiempoEstabilizarMs = DEF_ESTABILIZAR_MS;
+    tiempoMuestreoMs    = DEF_MUESTREO_MS;
+    tiempoRetraccionMs  = DEF_RETRACCION_MS;
+    guardarTiemposSolenoide();
+    prefs.putUInt("ver", VERSION_NVS);
+    return;
+  }
+  tiempoInsercionMs   = prefs.getULong("sol_ins", DEF_INSERCION_MS);
+  tiempoEstabilizarMs = prefs.getULong("sol_est", DEF_ESTABILIZAR_MS);
+  tiempoMuestreoMs    = prefs.getULong("sol_med", DEF_MUESTREO_MS);
+  tiempoRetraccionMs  = prefs.getULong("sol_ret", DEF_RETRACCION_MS);
 }
 
 // ─────────────────────────────────────────────────────────────────────
 // ESTADO
 // ─────────────────────────────────────────────────────────────────────
 MensajeFertiTrack msgEnviar;
-EstadoB   estadoActual    = EB_REPOSO;
+EstadoB       estadoActual        = EB_REPOSO;
 unsigned long tiempoInicioEtapa   = 0;
 unsigned long ultimaMuestraMillis = 0;
+unsigned long relePrendidoDesde   = 0;   // 0 = relé apagado
+unsigned long muestreoEfectivoMs  = 0;   // ventana real de este ciclo
+bool          serialListo         = false;
 int           muestras[MAX_MUESTRAS];
 int           cantidadMuestras    = 0;
 int           ultimaLecturaPromedio = -1;
 volatile bool stopSolicitado = false;
 
-// Cola de comandos (callback → loop)
 const int    COLA_CMD_MAX   = 10;
 ComandoRx    colaCmd[COLA_CMD_MAX];
 int          colaIni        = 0;
@@ -206,24 +233,39 @@ volatile bool colaDesbordada = false;
 portMUX_TYPE muxCola = portMUX_INITIALIZER_UNLOCKED;
 
 // ─────────────────────────────────────────────────────────────────────
-// CONTROL DEL SOLENOIDE
+// CONTROL DEL SOLENOIDE (única vía para tocar el pin del relé)
 // ─────────────────────────────────────────────────────────────────────
-// Encender / apagar el solenoide de forma explícita y segura.
-// Siempre usa estas funciones: nunca escribas directamente sobre el pin.
-
 void solenoidON() {
-  digitalWrite(PIN_PISTON_RELE, RELE_ACTIVADO);
-  Serial.println("[SOL] ON (solenoide energizado — ciclo breve)");
+#if DRIVER_MOSFET
+  digitalWrite(PIN_PISTON_RELE, HIGH);      // MOSFET: HIGH = conduce
+  pinMode(PIN_PISTON_RELE, OUTPUT);
+#else
+  digitalWrite(PIN_PISTON_RELE, LOW);       // relé: LOW = activo
+  pinMode(PIN_PISTON_RELE, OUTPUT);
+#endif
+  relePrendidoDesde = millis();
+  if (relePrendidoDesde == 0) relePrendidoDesde = 1;
+  if (serialListo) Serial.println("[SOL] ON  (pulso: sensor baja)");
 }
+
 void solenoidOFF() {
-  digitalWrite(PIN_PISTON_RELE, RELE_APAGADO);
-  Serial.println("[SOL] OFF (solenoide apagado — resorte retracta)");
+#if DRIVER_MOSFET
+  digitalWrite(PIN_PISTON_RELE, LOW);       // MOSFET: LOW = apagado
+  pinMode(PIN_PISTON_RELE, OUTPUT);
+#elif RELE_OFF_COMO_ENTRADA
+  pinMode(PIN_PISTON_RELE, INPUT);          // alta impedancia → relé suelta seguro
+#else
+  pinMode(PIN_PISTON_RELE, OUTPUT);
+  digitalWrite(PIN_PISTON_RELE, HIGH);
+#endif
+  relePrendidoDesde = 0;
+  if (serialListo) Serial.println("[SOL] OFF (resorte sube el sensor)");
 }
-// Seguridad ante falla o reset: solenoide siempre queda apagado.
+
 void solenoidEmergencia() { solenoidOFF(); }
 
 // ─────────────────────────────────────────────────────────────────────
-// ALIMENTACIÓN DEL SENSOR (opcional, reduce electrólisis)
+// ALIMENTACIÓN DEL SENSOR
 // ─────────────────────────────────────────────────────────────────────
 void alimentarSensor(bool encender) {
 #if PIN_SENSOR_ALIM >= 0
@@ -242,12 +284,10 @@ int leerMuestraADC() {
   return (int)(suma / LECTURAS_POR_MUESTRA);
 }
 
-// Promedio recortado: ordena muestras y descarta extremos (picos de mal contacto)
 int promedioRecortado(int n, int &minimo, int &maximo) {
   if (n <= 0) { minimo = 0; maximo = 0; return 0; }
   int t[MAX_MUESTRAS];
   for (int i = 0; i < n; i++) t[i] = muestras[i];
-  // Ordenamiento por inserción (n <= 64, rápido y sin memoria extra)
   for (int i = 1; i < n; i++) {
     int v = t[i], j = i - 1;
     while (j >= 0 && t[j] > v) { t[j+1] = t[j]; j--; }
@@ -285,21 +325,27 @@ void iniciarMedicion() {
     Serial.println("[ESP_B] MEDIR ignorado: ocupado o en emergencia.");
     return;
   }
+
+  // Recorta la ventana de muestreo si la suma pasaría el tope de seguridad
+  unsigned long fijos = tiempoInsercionMs + tiempoEstabilizarMs;
+  muestreoEfectivoMs = tiempoMuestreoMs;
+  if (fijos + muestreoEfectivoMs + 500UL > TIEMPO_ON_MAX_MS) {
+    muestreoEfectivoMs = (TIEMPO_ON_MAX_MS > fijos + 1000UL) ? (TIEMPO_ON_MAX_MS - fijos - 500UL) : 500UL;
+    Serial.printf("[ESP_B] AVISO: ventana de muestreo recortada a %lu ms por el tope de %lu ms.\n",
+                  muestreoEfectivoMs, TIEMPO_ON_MAX_MS);
+  }
+
   cantidadMuestras    = 0;
   ultimaMuestraMillis = 0;
   estadoActual        = EB_INSERTANDO;
   tiempoInicioEtapa   = millis();
 
-  // Encender sensor ANTES de que el pistón llegue (ya calienta mientras viaja)
   alimentarSensor(true);
-  // Energizar solenoide → pistón viaja a posición de medición
   solenoidON();
 
-  Serial.printf("[ESP_B] MEDIR iniciado. Pistón en camino (%lu ms)...\n",
-                tiempoInsercionMs);
-  Serial.printf("  Tiempos: ins=%lu est=%lu med=%lu ret=%lu ms | Total ON: ~%lu ms\n",
-                tiempoInsercionMs, tiempoEstabilizarMs, tiempoMuestreoMs, tiempoRetraccionMs,
-                tiempoInsercionMs + tiempoEstabilizarMs + tiempoMuestreoMs);
+  Serial.printf("[ESP_B] MEDIR iniciado. Tiempos: ins=%lu est=%lu med=%lu ret=%lu | ON total ~%lu ms\n",
+                tiempoInsercionMs, tiempoEstabilizarMs, muestreoEfectivoMs, tiempoRetraccionMs,
+                fijos + muestreoEfectivoMs);
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -307,18 +353,18 @@ void iniciarMedicion() {
 // ─────────────────────────────────────────────────────────────────────
 void ejecutarEmergencia() {
   stopSolicitado = false;
-  if (estadoActual == EB_EMERGENCIA) return;
-  solenoidEmergencia();     // solenoide OFF inmediatamente
+  solenoidEmergencia();
   alimentarSensor(false);
+  if (estadoActual == EB_EMERGENCIA) return;
   cantidadMuestras = 0;
-  estadoActual = EB_EMERGENCIA;
+  estadoActual     = EB_EMERGENCIA;
   Serial.println("[ESP_B] *** EMERGENCIA: solenoide apagado. Esperando RESET. ***");
 }
 void reiniciarNodo() {
-  solenoidEmergencia();     // asegurar solenoide OFF antes de aceptar órdenes
+  solenoidEmergencia();
   alimentarSensor(false);
   cantidadMuestras = 0;
-  estadoActual = EB_REPOSO;
+  estadoActual     = EB_REPOSO;
   Serial.println("[ESP_B] RESET. En REPOSO — solenoide apagado.");
 }
 
@@ -341,7 +387,6 @@ bool sacarComando(ComandoRx &salida) {
 void ejecutarComando(const ComandoRx &c) {
   Serial.printf("[RX] %s (%d)\n", c.cmd, c.param);
 
-  // STOP y RESET siempre se atienden primero
   if (strcmp(c.cmd, "STOP")  == 0) { ejecutarEmergencia(); return; }
   if (strcmp(c.cmd, "RESET") == 0) { reiniciarNodo();      return; }
 
@@ -350,11 +395,9 @@ void ejecutarComando(const ComandoRx &c) {
     return;
   }
 
-  // ── Comando normal ──────────────────────────────────────────────
   if (strcmp(c.cmd, "MEDIR") == 0) {
     iniciarMedicion();
   }
-  // ── NUEVO v5.5: ajuste de tiempos del solenoide desde el Maestro ─
   else if (strcmp(c.cmd, "SOL_INS") == 0) {
     if (c.param >= 100 && c.param <= 3000) {
       tiempoInsercionMs = (unsigned long)c.param;
@@ -392,7 +435,7 @@ void ejecutarComando(const ComandoRx &c) {
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// CALLBACK ESP-NOW — solo encola, levanta bandera STOP
+// CALLBACK ESP-NOW
 // ─────────────────────────────────────────────────────────────────────
 void OnDataRecv(const esp_now_recv_info *info, const uint8_t *incomingData, int len) {
   (void)info;
@@ -417,12 +460,60 @@ void OnDataRecv(const esp_now_recv_info *info, const uint8_t *incomingData, int 
 }
 
 // ─────────────────────────────────────────────────────────────────────
+// SERIAL: prueba de banco sin Maestro
+//   p = pulso de prueba   + / - = alarga / acorta el pulso (0.5 s)
+//   m = ciclo completo    s = stop     r = reset
+// ─────────────────────────────────────────────────────────────────────
+void atenderSerial() {
+  while (Serial.available()) {
+    char ch = (char)Serial.read();
+    if (ch == 'm' || ch == 'M') {
+      iniciarMedicion();
+    } else if (ch == 'p' || ch == 'P') {
+      if (estadoActual != EB_REPOSO) { Serial.println("[PRUEBA] Ocupado."); continue; }
+      estadoActual      = EB_PRUEBA;
+      tiempoInicioEtapa = millis();
+      Serial.printf("[PRUEBA] Pulso de %lu ms: observa qué extremo del émbolo SALE y cuánto.\n",
+                    pulsoPruebaMs);
+      solenoidON();
+    } else if (ch == '+') {
+      if (pulsoPruebaMs + 500UL <= 6000UL) pulsoPruebaMs += 500UL;
+      Serial.printf("[PRUEBA] Pulso de prueba = %lu ms\n", pulsoPruebaMs);
+    } else if (ch == '-') {
+      if (pulsoPruebaMs >= 1000UL) pulsoPruebaMs -= 500UL;
+      Serial.printf("[PRUEBA] Pulso de prueba = %lu ms\n", pulsoPruebaMs);
+    } else if (ch == 's' || ch == 'S') {
+      ejecutarEmergencia();
+    } else if (ch == 'r' || ch == 'R') {
+      reiniciarNodo();
+    }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// MOTIVO DEL ÚLTIMO REINICIO
+// ─────────────────────────────────────────────────────────────────────
+const char* motivoReset() {
+  switch (esp_reset_reason()) {
+    case ESP_RST_POWERON:  return "POWERON  (la placa perdio y recupero la alimentacion)";
+    case ESP_RST_BROWNOUT: return "BROWNOUT (cayo el 3.3 V del ESP32: problema de alimentacion)";
+    case ESP_RST_SW:       return "SW       (reinicio por software)";
+    case ESP_RST_PANIC:    return "PANIC    (error de software)";
+    case ESP_RST_INT_WDT:
+    case ESP_RST_TASK_WDT:
+    case ESP_RST_WDT:      return "WDT      (watchdog)";
+    case ESP_RST_EXT:      return "EXT      (pin EN / boton reset)";
+    case ESP_RST_DEEPSLEEP:return "DEEPSLEEP";
+    default:               return "otro / desconocido";
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────
 // SETUP
 // ─────────────────────────────────────────────────────────────────────
 void setup() {
-  // ── SOLENOIDE PRIMERO: apagarlo antes de cualquier delay o inicialización
-  pinMode(PIN_PISTON_RELE, OUTPUT);
-  solenoidOFF();  // solenoide apagado desde el primer microsegundo
+  // Solenoide apagado antes que nada (pin suelto = relé suelto). Sin prints aún.
+  solenoidOFF();
 
 #if PIN_SENSOR_ALIM >= 0
   pinMode(PIN_SENSOR_ALIM, OUTPUT);
@@ -430,21 +521,19 @@ void setup() {
   alimentarSensor(false);
 
   Serial.begin(115200);
+  serialListo = true;
   delay(200);
-  Serial.println("\n[FertiTrack v5.5] Iniciando ESP_B (sensor + solenoide PULSO)...");
-  Serial.println("  NUEVO v5.5: solenoide OFF en reposo — solo pulso al medir.");
-  Serial.println("  Corrige el sobrecalentamiento del JF-0530B.");
+  Serial.println("\n[FertiTrack v5.8] Iniciando ESP_B (sensor + solenoide en PULSO)...");
+  Serial.printf("  Motivo del ultimo reinicio: %s\n", motivoReset());
+  Serial.println("  Prueba de banco: p=pulso  +/-=duracion  m=medir  s=stop  r=reset");
 
-  // NVS: cargar tiempos guardados
   prefs.begin("espb", false);
   cargarTiemposSolenoide();
 
-  unsigned long totalOn = tiempoInsercionMs + tiempoEstabilizarMs + tiempoMuestreoMs;
-  Serial.printf("  Tiempos solenoide: ins=%lu est=%lu med=%lu ret=%lu ms\n",
-                tiempoInsercionMs, tiempoEstabilizarMs, tiempoMuestreoMs, tiempoRetraccionMs);
-  Serial.printf("  Tiempo ON por ciclo: ~%lu ms (JF-0530B: frio siempre ✓)\n", totalOn);
-  Serial.printf("  Direccion: solenoide activo = piston %s\n",
-                SOLENOIDE_BAJA_AL_ACTIVAR ? "BAJA (entra al suelo)" : "SUBE (sale del suelo)");
+  Serial.printf("  Tiempos: ins=%lu est=%lu med=%lu ret=%lu ms | ON/ciclo ~%lu ms (tope %lu)\n",
+                tiempoInsercionMs, tiempoEstabilizarMs, tiempoMuestreoMs, tiempoRetraccionMs,
+                tiempoInsercionMs + tiempoEstabilizarMs + tiempoMuestreoMs, TIEMPO_ON_MAX_MS);
+  Serial.printf("  Pulso de prueba: %lu ms\n", pulsoPruebaMs);
 
   analogReadResolution(12);
   analogSetAttenuation(ADC_11db);
@@ -470,17 +559,25 @@ void setup() {
   if (esp_now_add_peer(&peerInfo) != ESP_OK)
     Serial.println("  ERROR registrando al Maestro como peer");
 
-  Serial.println("  ESP_B v5.5 listo. Solenoide APAGADO. Esperando MEDIR.\n");
+  Serial.println("  ESP_B v5.8 listo. Solenoide APAGADO. Esperando MEDIR.\n");
 }
 
 // ─────────────────────────────────────────────────────────────────────
 // LOOP — máquina de estados no bloqueante
 // ─────────────────────────────────────────────────────────────────────
 void loop() {
-  // 1) STOP: prioridad absoluta — apaga el solenoide al instante
+  // 0) Vigilante: el relé nunca puede quedar ON más del tope
+  if (relePrendidoDesde != 0 && millis() - relePrendidoDesde > TIEMPO_ON_MAX_MS) {
+    Serial.println("[ESP_B] VIGILANTE: relé ON demasiado tiempo. Apagando.");
+    ejecutarEmergencia();
+    return;
+  }
+
+  // 1) STOP: prioridad absoluta
   if (stopSolicitado) { ejecutarEmergencia(); return; }
 
-  // 2) Procesar todos los comandos pendientes de la cola
+  // 2) Serial de prueba + comandos pendientes
+  atenderSerial();
   {
     ComandoRx c;
     while (sacarComando(c)) ejecutarComando(c);
@@ -490,35 +587,27 @@ void loop() {
     Serial.println("[ESP_B] AVISO: cola llena, se descartó un comando.");
   }
 
-  // 3) Máquina de estados — sin bloqueos (nunca hay delay() aquí)
+  // 3) Máquina de estados
   unsigned long ahora = millis();
 
   switch (estadoActual) {
 
-    // ── ESPERANDO ORDEN ────────────────────────────────────────────
     case EB_REPOSO:
-      // Solenoide OFF, nada que hacer. Espera "MEDIR".
       break;
 
-    // ── FASE 1: PISTÓN VIAJANDO A POSICIÓN DE MEDICIÓN ─────────────
     case EB_INSERTANDO:
       if (ahora - tiempoInicioEtapa >= tiempoInsercionMs) {
-        // Pistón llegó a la posición de medición.
-        // Ahora espera TIEMPO_ESTABILIZAR_MS para que el contacto se asiente.
         tiempoInicioEtapa   = ahora;
         ultimaMuestraMillis = ahora;
         estadoActual        = EB_MIDIENDO;
-        // El solenoide SIGUE encendido (contacto activo con el suelo).
-        Serial.printf("[ESP_B] Pistón en posición. Midiendo por %lu ms...\n",
-                      tiempoEstabilizarMs + tiempoMuestreoMs);
+        Serial.printf("[ESP_B] Sensor en la tierra. Midiendo por %lu ms...\n",
+                      tiempoEstabilizarMs + muestreoEfectivoMs);
       }
       break;
 
-    // ── FASE 2: TOMA DE MUESTRAS (incluye asentamiento inicial) ────
     case EB_MIDIENDO: {
       unsigned long elapsed = ahora - tiempoInicioEtapa;
 
-      // Tomar muestras solo después del tiempo de estabilización
       if (elapsed >= tiempoEstabilizarMs &&
           cantidadMuestras < MAX_MUESTRAS &&
           ahora - ultimaMuestraMillis >= INTERVALO_MUESTRA_MS) {
@@ -526,41 +615,41 @@ void loop() {
         ultimaMuestraMillis = ahora;
       }
 
-      // ¿Terminó la ventana de muestreo?
-      if (elapsed >= tiempoEstabilizarMs + tiempoMuestreoMs) {
-        // Apagar solenoide → resorte retracta
-        solenoidOFF();
+      if (elapsed >= tiempoEstabilizarMs + muestreoEfectivoMs) {
+        solenoidOFF();            // fin del pulso: el resorte sube el sensor
         alimentarSensor(false);
         tiempoInicioEtapa = ahora;
         estadoActual      = EB_RETRACTANDO;
 
-        // Calcular el promedio ya (así se tiene listo cuando termine la retracción)
         int mn, mx;
         ultimaLecturaPromedio = promedioRecortado(cantidadMuestras, mn, mx);
         Serial.printf("[ESP_B] Muestreo completo: %d muestras | promedio=%d | min=%d max=%d | rango=%d\n",
                       cantidadMuestras, ultimaLecturaPromedio, mn, mx, mx - mn);
         if (mx - mn > 800)
           Serial.println("  AVISO: rango alto (>800). Revisa el contacto del sensor con el suelo.");
-        Serial.printf("[ESP_B] Retractando pistón (%lu ms)...\n", tiempoRetraccionMs);
+        Serial.printf("[ESP_B] Retractando (%lu ms)...\n", tiempoRetraccionMs);
       }
       break;
     }
 
-    // ── FASE 3: RESORTE RETRACTANDO ────────────────────────────────
     case EB_RETRACTANDO:
       if (ahora - tiempoInicioEtapa >= tiempoRetraccionMs) {
-        // Pistón en posición de reposo. Ciclo completo.
         estadoActual = EB_REPOSO;
-        Serial.printf("[ESP_B] Pistón retractado. Enviando HUMEDAD=%d al Maestro.\n",
+        Serial.printf("[ESP_B] Sensor arriba. Enviando HUMEDAD=%d al Maestro.\n",
                       ultimaLecturaPromedio);
-        // Enviar el ADC promedio al Maestro (0 si no hubo muestras)
         enviarAMaestro("HUMEDAD", (ultimaLecturaPromedio > 0) ? ultimaLecturaPromedio : 0);
       }
       break;
 
-    // ── EMERGENCIA ──────────────────────────────────────────────────
+    case EB_PRUEBA:
+      if (ahora - tiempoInicioEtapa >= pulsoPruebaMs) {
+        solenoidOFF();
+        estadoActual = EB_REPOSO;
+        Serial.println("[PRUEBA] Fin del pulso. Solenoide apagado.");
+      }
+      break;
+
     case EB_EMERGENCIA:
-      // Solenoide ya OFF. Nada que hacer. Esperando RESET.
       break;
   }
 }

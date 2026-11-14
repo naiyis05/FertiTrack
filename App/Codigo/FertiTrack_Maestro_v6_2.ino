@@ -1,9 +1,43 @@
 /*
   =========================================================================
-  FertiTrack_Maestro_v5.5.ino — MAESTRO (arquitectura por zonas, monorriel)
+  FertiTrack_Maestro_v6.2.ino — MAESTRO (arquitectura por zonas, monorriel)
   Placa : ESP32 Dev Module — Core Espressif 3.x.x
-  MAC de ESTE ESP32 : 20:50:0D:10:1E:E0
+  MAC de ESTE ESP32 : 6C:C8:40:4E:57:D0
+  
   =========================================================================
+
+  -------------------------------------------------------------------
+  QUÉ CAMBIÓ EN v6.2 (MODO FUERZA TAMBIÉN EN EL RETORNO AL ORIGEN)
+  -------------------------------------------------------------------
+  ESP_A decide la velocidad del retorno con SU variable velRapida (el comando
+  RETORNAR no lleva velocidad). Hasta v6.1 el Maestro siempre le sincronizaba
+  VEL_R = velRapida real, así que con Modo Fuerza activo los avances iban
+  lentos pero el regreso al origen iba a velocidad rápida.
+  Ahora VEL_R se envía como:  modoFuerza ? velLenta : velRapida
+  y se re-sincroniza al marcar/desmarcar "Modo fuerza" (la ruta ya llamaba a
+  sincronizarVelocidadesConEspA) y al arrancar el Maestro.
+  La velocidad rápida guardada en NVS y mostrada en la app NO cambia.
+  Requiere ESP_A v5.5/v6 (el que ya tienes). Sin cambios de protocolo.
+
+  -------------------------------------------------------------------
+  QUÉ CAMBIÓ EN v6.1 (PRUEBA DE BOMBAS desde la app)
+  -------------------------------------------------------------------
+  Nueva tarjeta "Prueba de bombas" en la app: botones para ENCENDER la bomba
+  de riego o la de fertilización (relés PIN_RELE_RIEGO / PIN_RELE_FERTI) y un
+  botón para APAGAR. Nueva ruta:
+     /api/prueba_bomba?bomba=riego|ferti|todas&accion=1|0&seg=N
+  Seguridad:
+   - Solo con el robot en reposo (EM_ESPERANDO). Estado nuevo EM_PRUEBA_BOMBA:
+     mientras una bomba está encendida, las demás pruebas/rutinas responden
+     "sistema ocupado".
+   - AUTO-APAGADO: cada bomba se apaga sola a los N segundos (por defecto 10,
+     máximo 60) para no dejarla en seco o regando de más si se pierde la
+     conexión del celular.
+   - "Detener" de la app, el botón físico y cualquier falla apagan las bombas
+     de inmediato (declararFalla ya apagaba los relés).
+   - La Pantalla muestra la animación de riego/fertilización durante la prueba.
+  /api/estado ahora incluye bomba_riego y bomba_ferti (estado real del relé).
+  SIN CAMBIOS en protocolo ESP-NOW, ESP_A/B/C ni Pantalla.
 
   -------------------------------------------------------------------
   QUÉ CAMBIÓ EN v5.5 (control total desde la app)
@@ -99,6 +133,7 @@ enum EstadoMaestro {
   EM_PRUEBA_AVANZANDO, EM_PRUEBA_LISTA, EM_PRUEBA_RETORNANDO,
   EM_PRUEBA_SENSOR,
   EM_PRUEBA_BRAZO,   // NUEVO v5.5: extensión/retracción manual de brazo
+  EM_PRUEBA_BOMBA,   // NUEVO v6.1: prueba manual de bombas desde la app
   EM_EMERGENCIA
 };
 
@@ -395,6 +430,7 @@ const char *nombreEstado(EstadoMaestro e) {
     case EM_PRUEBA_RETORNANDO:    return "PRUEBA_RETORNANDO";
     case EM_PRUEBA_SENSOR:        return "PRUEBA_SENSOR";
     case EM_PRUEBA_BRAZO:         return "PRUEBA_BRAZO";
+    case EM_PRUEBA_BOMBA:         return "PRUEBA_BOMBA";
     case EM_EMERGENCIA:           return "EMERGENCIA";
     default:                      return "?";
   }
@@ -448,12 +484,15 @@ void enviarCritico(uint8_t *mac, const char *cmd, int param) {
 // ESP_A v5.5 los aplicará cuando se actualice.
 // ─────────────────────────────────────────────────────────────────────
 void sincronizarVelocidadesConEspA() {
-  enviarCritico(MAC_ESP_A, "VEL_R", (int)velRapida);
+  // v6.2: en Modo Fuerza el retorno (que usa velRapida en ESP_A) también va lento
+  const int velRetornoEspA = (int)(modoFuerza ? velLenta : velRapida);
+  enviarCritico(MAC_ESP_A, "VEL_R", velRetornoEspA);
   enviarCritico(MAC_ESP_A, "VEL_M", (int)velMedia);
   enviarCritico(MAC_ESP_A, "VEL_L", (int)velLenta);
   enviarCritico(MAC_ESP_A, "ACEL",  (int)acel);
-  Serial.printf("[SYNC] Velocidades enviadas a ESP_A: R=%d M=%d L=%d A=%d\n",
-                (int)velRapida, (int)velMedia, (int)velLenta, (int)acel);
+  Serial.printf("[SYNC] Velocidades enviadas a ESP_A: R=%d%s M=%d L=%d A=%d\n",
+                velRetornoEspA, modoFuerza ? " (modo fuerza: =lenta)" : "",
+                (int)velMedia, (int)velLenta, (int)acel);
 }
 void sincronizarActuadoresConEspA() {
   enviarCritico(MAC_ESP_A, "ACT_EXT", (int)actExtenderMs);
@@ -540,7 +579,7 @@ void ordenarAvance(const char *cmd, float vel, long pasos) {
 void ordenarRetorno(long posEstimada) {
   // Con modoFuerza activo el retorno también usa velLenta: el timeout se calcula
   // con esa velocidad para no disparar FALLA 1 falsa mientras ESP_A regresa lento.
-  // La velocidad física real cambia en ESP_A v5.5 (tras sincronizar VEL_R=velLenta).
+  // La velocidad física real cambia en ESP_A porque (v6.2) se le sincroniza VEL_R=velLenta.
   float velRet = modoFuerza ? velLenta : velRapida;
   ordenarA(NODO_A, "RETORNAR", 0, timeoutMovimientoMs(posEstimada, velRet));
 }
@@ -581,9 +620,49 @@ void procesarResetsRepetidos() {
   resetsPendientes--;
   enviarResetATodos();
 }
+// ─────────────────────────────────────────────────────────────────────
+// NUEVO v6.1: PRUEBA MANUAL DE BOMBAS (desde la app)
+// ─────────────────────────────────────────────────────────────────────
+const int PRUEBA_BOMBA_DEF_S = 10;   // duración por defecto (s)
+const int PRUEBA_BOMBA_MAX_S = 60;   // máximo permitido (s)
+bool          pruebaBombaRiegoOn = false;
+bool          pruebaBombaFertiOn = false;
+unsigned long pruebaRiegoFinMs   = 0;
+unsigned long pruebaFertiFinMs   = 0;
+
+// Deja la Pantalla acorde a lo que sigue encendido
+void actualizarPantallaPruebaBomba() {
+  if (pruebaBombaRiegoOn)      { notificarPantallaActividad(2); notificarPantallaFase(0); }
+  else if (pruebaBombaFertiOn) { notificarPantallaActividad(3); notificarPantallaFase(0); }
+  else                         { notificarPantallaActividad(0); notificarPantallaFase(0); }
+}
+// cual: 0 = todas, 1 = riego, 2 = fertilización
+void apagarPruebaBomba(int cual) {
+  if (cual == 0 || cual == 1) { digitalWrite(PIN_RELE_RIEGO, RELE_OFF); pruebaBombaRiegoOn = false; }
+  if (cual == 0 || cual == 2) { digitalWrite(PIN_RELE_FERTI, RELE_OFF); pruebaBombaFertiOn = false; }
+  if (estadoActual == EM_PRUEBA_BOMBA) {
+    actualizarPantallaPruebaBomba();
+    if (!pruebaBombaRiegoOn && !pruebaBombaFertiOn) estadoActual = EM_ESPERANDO;
+  }
+}
+bool iniciarPruebaBomba(bool esRiego, unsigned long ms) {
+  if (estadoActual != EM_ESPERANDO && estadoActual != EM_PRUEBA_BOMBA) return false;
+  modoRutina = RUTINA_NINGUNA;
+  unsigned long fin = millis() + ms;
+  if (esRiego) { digitalWrite(PIN_RELE_RIEGO, RELE_ON); pruebaBombaRiegoOn = true; pruebaRiegoFinMs = fin; }
+  else         { digitalWrite(PIN_RELE_FERTI, RELE_ON); pruebaBombaFertiOn = true; pruebaFertiFinMs = fin; }
+  estadoActual = EM_PRUEBA_BOMBA;
+  actualizarPantallaPruebaBomba();
+  Serial.printf("[PRUEBA_BOMBA] Bomba %s ENCENDIDA (auto-apagado en %lu s)\n",
+                esRiego ? "RIEGO" : "FERTI", ms / 1000UL);
+  return true;
+}
+
 void declararFalla(int cod) {
   digitalWrite(PIN_RELE_RIEGO, RELE_OFF);
   digitalWrite(PIN_RELE_FERTI, RELE_OFF);
+  pruebaBombaRiegoOn = false;
+  pruebaBombaFertiOn = false;
   enviarStopATodos();
   stopsPendientes      = STOP_REPETICIONES_EXTRA;
   ultimoStopRepetido   = millis();
@@ -995,6 +1074,19 @@ label{font-size:14px;}
   </div>
 </div>
 
+<!-- === NUEVO v6.1: Prueba de bombas === -->
+<div class="tarjeta">
+  <h3>💧 Prueba de bombas</h3>
+  <div class="nota">⚠️ Verifica que haya líquido en el tanque antes de encender: una bomba en seco se daña. El robot debe estar en reposo. Cada bomba se apaga sola al terminar el tiempo.</div>
+  <div class="fila"><span>Duración (segundos, 1-60)</span><input type="number" class="corto" id="bombaSeg" min="1" max="60" step="1" value="10"></div>
+  <div class="flex-row">
+    <button class="btn-brazo" onclick="pruebaBomba('riego',1)">💧 Encender bomba riego</button>
+    <button class="btn-brazo" style="background:#BF360C" onclick="pruebaBomba('ferti',1)">🧪 Encender bomba fertilización</button>
+  </div>
+  <button class="btn-detener" onclick="pruebaBomba('todas',0)">⏹ Apagar bombas</button>
+  <div class="nota" id="estadoBombas">Bomba riego: -- | Bomba fertilización: --</div>
+</div>
+
 <!-- Calibrar distancia (con diámetro de rueda v5.5) -->
 <div class="tarjeta">
   <h3>📏 Calibrar distancia</h3>
@@ -1102,6 +1194,14 @@ function guardarActuadores(){
   llamar('/api/actuadores?ext_ms='+e+'&rec_ms='+r+'&mrg_ms='+m);
 }
 function pruebaBrazo(b,a){llamar('/api/prueba_brazo?brazo='+b+'&accion='+a);}
+// v6.1: prueba de bombas (solo avisa si hay error; el estado se ve en la tarjeta)
+function pruebaBomba(b,a){
+  var s=document.getElementById('bombaSeg').value||10;
+  fetch('/api/prueba_bomba?bomba='+b+'&accion='+a+'&seg='+s)
+    .then(function(r){return r.json();})
+    .then(function(d){if(d&&d.ok===false)alert('Error: '+d.error);})
+    .catch(function(){});
+}
 // v5.5: rueda
 function guardarRueda(aplicar){
   const d=document.getElementById('ruedaDiam').value;
@@ -1113,6 +1213,8 @@ const nombresSuelo=['Sin datos','Seca','Intermedia','Húmeda','Sobre-húmeda'];
 function refrescar(){
   fetch('/api/estado').then(r=>r.json()).then(d=>{
     document.getElementById('estado').innerText=d.estado;
+    var eb=document.getElementById('estadoBombas');
+    if(eb){eb.innerText='Bomba riego: '+(d.bomba_riego?'🟢 ENCENDIDA':'⚪ apagada')+' | Bomba fertilización: '+(d.bomba_ferti?'🟢 ENCENDIDA':'⚪ apagada');}
     document.getElementById('rutina').innerText=d.modo_rutina;
     document.getElementById('zona').innerText=(d.total_zonas>0)?(d.zona_actual+' / '+d.total_zonas):'--';
     document.getElementById('humedad').innerText=(d.humedad_adc>=0)?d.humedad_adc:'--';
@@ -1449,6 +1551,36 @@ void ruta_prueba_brazo() {
     " (" + String(tms) + " ms). Cuando termine podras ordenar otra accion.");
 }
 
+// === NUEVA RUTA v6.1: Prueba de bombas ===
+void ruta_prueba_bomba() {
+  String bomba  = server.hasArg("bomba")  ? server.arg("bomba")          : "";
+  int    accion = server.hasArg("accion") ? server.arg("accion").toInt() : -1;
+  int    seg    = server.hasArg("seg")    ? server.arg("seg").toInt()    : PRUEBA_BOMBA_DEF_S;
+  if (bomba != "riego" && bomba != "ferti" && bomba != "todas") {
+    responderJson(400,false,"error","bomba debe ser 'riego', 'ferti' o 'todas'"); return;
+  }
+  if (accion != 0 && accion != 1) { responderJson(400,false,"error","accion debe ser 0 (apagar) o 1 (encender)"); return; }
+  if (seg < 1) seg = 1;
+  if (seg > PRUEBA_BOMBA_MAX_S) seg = PRUEBA_BOMBA_MAX_S;
+
+  if (accion == 0) {
+    if (estadoActual != EM_PRUEBA_BOMBA) { responderJson(200,true,"mensaje","No hay ninguna bomba de prueba encendida."); return; }
+    apagarPruebaBomba(bomba == "riego" ? 1 : (bomba == "ferti" ? 2 : 0));
+    Serial.printf("[PRUEBA_BOMBA] Apagado manual (%s)\n", bomba.c_str());
+    responderJson(200,true,"mensaje","Bomba(s) apagada(s).");
+    return;
+  }
+  if (bomba == "todas") { responderJson(400,false,"error","para encender elige 'riego' o 'ferti'"); return; }
+  if (estadoActual != EM_ESPERANDO && estadoActual != EM_PRUEBA_BOMBA) {
+    responderJson(409,false,"error","sistema ocupado (el robot debe estar en reposo)"); return;
+  }
+  if (!iniciarPruebaBomba(bomba == "riego", (unsigned long)seg * 1000UL)) {
+    responderJson(409,false,"error","no se pudo iniciar la prueba de bomba"); return;
+  }
+  responderJson(200,true,"mensaje",
+    String("Bomba ") + bomba + " ENCENDIDA por " + String(seg) + " s (se apaga sola).");
+}
+
 void ruta_detener()  { declararFalla(8); server.send(200,"application/json","{\"ok\":true}"); }
 void ruta_reiniciar(){ reiniciarSistema(); server.send(200,"application/json","{\"ok\":true}"); }
 
@@ -1493,6 +1625,9 @@ void ruta_estado() {
   doc["act_rec_ms"]   = actRecogerMs;
   // v5.5: rueda
   doc["diametro_rueda_cm"] = diametroRuedaCm;
+  // v6.1: estado real de los relés de las bombas
+  doc["bomba_riego"] = (digitalRead(PIN_RELE_RIEGO) == RELE_ON);
+  doc["bomba_ferti"] = (digitalRead(PIN_RELE_FERTI) == RELE_ON);
   if (esperandoProximoCiclo) {
     long r = (long)(proximoCicloMillis - millis());
     doc["proximo_ciclo_seg"] = (r > 0) ? (r/1000) : 0;
@@ -1523,6 +1658,7 @@ void configurarServidor() {
   server.on("/api/actuadores",          HTTP_GET, ruta_actuadores);
   server.on("/api/rueda",               HTTP_GET, ruta_rueda);
   server.on("/api/prueba_brazo",        HTTP_GET, ruta_prueba_brazo);
+  server.on("/api/prueba_bomba",        HTTP_GET, ruta_prueba_bomba);
   server.onNotFound(ruta_no_encontrada);
   server.begin();
 }
@@ -1542,7 +1678,7 @@ void registrarPeer(uint8_t *mac, const char *nombre) {
 void setup() {
   Serial.begin(115200);
   delay(200);
-  Serial.println("\n[FertiTrack v5.5] Iniciando MAESTRO...");
+  Serial.println("\n[FertiTrack v6.2] Iniciando MAESTRO...");
 
   pinMode(PIN_RELE_RIEGO,       OUTPUT); digitalWrite(PIN_RELE_RIEGO, RELE_OFF);
   pinMode(PIN_RELE_FERTI,       OUTPUT); digitalWrite(PIN_RELE_FERTI, RELE_OFF);
@@ -1591,7 +1727,7 @@ void setup() {
   Serial.println("  Servidor web en http://192.168.4.1");
   Serial.println("\n[MAESTRO v5.5] LISTO");
   Serial.println("  WiFi: FertiTrack_AP / 123456789");
-  Serial.println("  Nuevas rutas: /api/velocidades /api/actuadores /api/rueda /api/prueba_brazo\n");
+  Serial.println("  Nuevas rutas: /api/velocidades /api/actuadores /api/rueda /api/prueba_brazo /api/prueba_bomba\n");
 
   if (RECOGER_BRAZOS_AL_ARRANCAR) {
     tiempoArranque = millis();
@@ -1813,6 +1949,18 @@ void loop() {
       Serial.println("[PRUEBA_BRAZO] Completado.");
       estadoActual = EM_ESPERANDO;
       notificarPantallaActividad(0); notificarPantallaFase(0);
+      break;
+
+    // NUEVO v6.1: prueba manual de bombas (auto-apagado por tiempo)
+    case EM_PRUEBA_BOMBA:
+      if (pruebaBombaRiegoOn && (long)(millis() - pruebaRiegoFinMs) >= 0) {
+        apagarPruebaBomba(1);
+        Serial.println("[PRUEBA_BOMBA] Riego: tiempo cumplido, bomba apagada.");
+      }
+      if (pruebaBombaFertiOn && (long)(millis() - pruebaFertiFinMs) >= 0) {
+        apagarPruebaBomba(2);
+        Serial.println("[PRUEBA_BOMBA] Ferti: tiempo cumplido, bomba apagada.");
+      }
       break;
 
     case EM_ESPERANDO:

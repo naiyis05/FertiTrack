@@ -85,7 +85,7 @@
 const int CANAL_WIFI = 1; // mismo canal en los 5 nodos
 
 // MAC del MAESTRO (confirmada)
-uint8_t MAC_MAESTRO[] = {0x20, 0x50, 0x0D, 0x10, 0x1E, 0xE0};
+uint8_t MAC_MAESTRO[] = {0x6C, 0xC8, 0x40, 0x4E, 0x57, 0xD0};
 
 // ─────────────────────────────────────────────────────────────────────
 // PINES
