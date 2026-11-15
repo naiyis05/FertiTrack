@@ -136,7 +136,7 @@ Los detalles de red y permisos por versión de Android están en
 
 ## Asistente de IA por voz y texto
 
-El botón ✨ de la barra superior abre el asistente. Se le habla con el micrófono, con la
+El botón ✨ de la barra superior abre a **Daniela**, la asistente de FertiTrack. Se le habla con el micrófono, con la
 transcripción en vivo, o se le escribe. Responde en pantalla y en voz alta con el
 `TextToSpeech` del sistema. El altavoz de la cabecera silencia las respuestas, y tocar el
 micrófono corta la voz.

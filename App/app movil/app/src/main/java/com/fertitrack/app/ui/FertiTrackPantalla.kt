@@ -310,7 +310,7 @@ private fun BarraSuperior(
             },
             actions = {
                 IconButton(onClick = onAsistente, modifier = Modifier.testTag(TAG_BOTON_ASISTENTE)) {
-                    Icon(Icons.Rounded.AutoAwesome, contentDescription = "Asistente", tint = MaterialTheme.colorScheme.primary)
+                    Icon(Icons.Rounded.AutoAwesome, contentDescription = "Hablar con Daniela, la asistente", tint = MaterialTheme.colorScheme.primary)
                 }
                 if (!verConexion) {
                     ChipConexion(

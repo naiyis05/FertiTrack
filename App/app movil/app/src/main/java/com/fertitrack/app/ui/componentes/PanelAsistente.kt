@@ -110,7 +110,7 @@ fun PanelAsistente(
         shadowElevation = 12.dp,
         modifier = modifier
             .testTag(TAG_PANEL_ASISTENTE)
-            .semantics { paneTitle = "Asistente" },
+            .semantics { paneTitle = "Daniela, asistente de FertiTrack" },
     ) {
         Column(Modifier.padding(horizontal = 16.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Cabecera(estado, acciones)
@@ -134,7 +134,7 @@ private fun Cabecera(estado: EstadoAsistente, acciones: AccionesAsistente) {
             Icon(Icons.Rounded.AutoAwesome, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer)
         }
         Column(Modifier.weight(1f).padding(start = 12.dp)) {
-            Text("Asistente", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text("Daniela", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Text(
                 when {
                     estado.escuchando -> "Te escucho…"
