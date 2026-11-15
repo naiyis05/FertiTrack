@@ -20,8 +20,8 @@ import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
 
 /**
- * Cuerpo de `models/{modelo}:generateContent` y lectura de su respuesta, sin red. La
- * búsqueda en Google va siempre activada: el modelo decide si la usa.
+ * Cuerpo de `models/{modelo}:generateContent` y lectura de su respuesta, sin red. Con
+ * [peticion] `conBusqueda`, la búsqueda en Google va activada y el modelo decide si la usa.
  */
 object GeminiJson {
 
@@ -30,10 +30,11 @@ object GeminiJson {
     /** Motivos de corte que significan "no quiso responder". */
     private val bloqueos = setOf("SAFETY", "PROHIBITED_CONTENT", "BLOCKLIST", "SPII", "RECITATION")
 
-    fun peticion(historial: List<TurnoChat>, contexto: String, sistema: String): String {
+    fun peticion(historial: List<TurnoChat>, contexto: String, sistema: String, conBusqueda: Boolean = true): String {
         val ultimaPregunta = historial.indexOfLast { it.deUsuario }
+        val instrucciones = if (conBusqueda) sistema else "$sistema\n$SIN_BUSQUEDA"
         return buildJsonObject {
-            putJsonObject("systemInstruction") { putJsonArray("parts") { addJsonObject { put("text", sistema) } } }
+            putJsonObject("systemInstruction") { putJsonArray("parts") { addJsonObject { put("text", instrucciones) } } }
             putJsonArray("contents") {
                 historial.forEachIndexed { i, turno ->
                     addJsonObject {
@@ -48,9 +49,13 @@ object GeminiJson {
                     }
                 }
             }
-            putJsonArray("tools") { addJsonObject { putJsonObject("google_search") {} } }
+            if (conBusqueda) putJsonArray("tools") { addJsonObject { putJsonObject("google_search") {} } }
         }.toString()
     }
+
+    /** Se añade a las instrucciones cuando la búsqueda no está disponible (p. ej., plan gratuito). */
+    const val SIN_BUSQUEDA =
+        "Ahora no tienes búsqueda en internet: responde con lo que sabes y, si un dato puede haber cambiado (clima, precios, noticias), dilo."
 
     private fun conContexto(pregunta: String, contexto: String) =
         "Contexto de FertiTrack (úsalo, no lo recites):\n$contexto\n\nPregunta del usuario:\n$pregunta"

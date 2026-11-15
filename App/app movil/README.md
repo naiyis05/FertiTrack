@@ -164,7 +164,9 @@ micrófono corta la voz.
    - abrir la confirmación de un ciclo, un sensado o una fertilización, que tú confirmas;
    - buscar en internet (clima, cultivos, fertilizantes) con la búsqueda de Google de Gemini.
      En ese caso muestra las fuentes y las sugerencias de búsqueda de Google sin modificarlas,
-     como exigen sus condiciones.
+     como exigen sus condiciones. En el plan gratuito de Gemini la búsqueda no tiene cuota
+     (Google responde 429): la app reintenta sin ella y, durante esa sesión, responde solo con
+     lo que sabe el modelo. Para tener búsqueda hay que activar la facturación en Google AI Studio.
 
    Nunca envía órdenes al robot ni puede detenerlo: para eso está DETENER, que sigue visible
    debajo del panel.

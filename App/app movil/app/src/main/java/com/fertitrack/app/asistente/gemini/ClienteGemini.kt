@@ -10,6 +10,7 @@ import kotlin.coroutines.resumeWithException
 import kotlinx.coroutines.suspendCancellableCoroutine
 import okhttp3.Call
 import okhttp3.Callback
+import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -19,7 +20,8 @@ import okhttp3.Response
 
 /**
  * Gemini por REST. Sale por la red por defecto del teléfono (datos móviles u otro Wi-Fi):
- * nunca por la del robot, que no da internet. Sin reintentos: la persona vuelve a preguntar.
+ * nunca por la del robot, que no da internet. Sin reintentos (la persona vuelve a preguntar),
+ * salvo el de sin búsqueda cuando Google no da cuota a la búsqueda.
  *
  * [hayInternet] se consulta antes de cada pregunta: unido solo al AP del robot, el DNS no
  * contesta y la llamada tardaría hasta el timeout en fallar.
@@ -33,15 +35,39 @@ class ClienteGemini(
     private val hayInternet: () -> Boolean = { true },
 ) : Cerebro {
 
+    /**
+     * En el plan gratuito, Google no da cuota a la búsqueda (429) aunque el modelo sí responda.
+     * Se descubre con la primera pregunta y se deja de pedir hasta que se cierre la app.
+     */
+    @Volatile
+    private var busquedaDisponible = true
+
     override suspend fun responder(historial: List<TurnoChat>, contexto: String): RespuestaCerebro {
         if (clave.isBlank()) return RespuestaCerebro.Fallo(TipoFallo.SIN_CLAVE)
         if (!hayInternet()) return RespuestaCerebro.Fallo(TipoFallo.SIN_INTERNET, "La red por defecto no tiene internet")
         val url = "$urlBase/models/$modelo:generateContent".toHttpUrlOrNull()
             ?: return RespuestaCerebro.Fallo(TipoFallo.RESPUESTA_RARA, "Dirección de Gemini no válida")
+        if (!busquedaDisponible) return enviar(url, historial, contexto, conBusqueda = false)
+
+        val conBusqueda = enviar(url, historial, contexto, conBusqueda = true)
+        if (conBusqueda !is RespuestaCerebro.Fallo || conBusqueda.tipo != TipoFallo.CUOTA) return conBusqueda
+        // Un único reintento sin búsqueda. Si también da 429, el límite es del modelo y se
+        // sigue intentando con búsqueda la próxima vez.
+        val sinBusqueda = enviar(url, historial, contexto, conBusqueda = false)
+        if (sinBusqueda is RespuestaCerebro.Ok) busquedaDisponible = false
+        return sinBusqueda
+    }
+
+    private suspend fun enviar(
+        url: HttpUrl,
+        historial: List<TurnoChat>,
+        contexto: String,
+        conBusqueda: Boolean,
+    ): RespuestaCerebro {
         val peticion = Request.Builder()
             .url(url)
             .header("x-goog-api-key", clave)
-            .post(GeminiJson.peticion(historial, contexto, sistema).toRequestBody(TIPO_JSON))
+            .post(GeminiJson.peticion(historial, contexto, sistema, conBusqueda).toRequestBody(TIPO_JSON))
             .build()
         val (codigo, cuerpo) = try {
             http.newCall(peticion).ejecutar()
