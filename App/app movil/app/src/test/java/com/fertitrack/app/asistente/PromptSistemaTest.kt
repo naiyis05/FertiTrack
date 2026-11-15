@@ -19,4 +19,11 @@ class PromptSistemaTest {
         assertTrue(texto.contains("de cuándo son los datos"))
         assertTrue(texto.contains("http://192.168.4.1"))
     }
+
+    @Test
+    fun incluyeLaGuiaDeLechugaConElNombreRealDelUmbral() {
+        assertTrue(texto.endsWith(ConocimientoLechuga.TEXTO))
+        // Debe coincidir con la etiqueta de la página web del Maestro v6.2.
+        assertTrue(texto.contains("SECA si humedad < (%)"))
+    }
 }
