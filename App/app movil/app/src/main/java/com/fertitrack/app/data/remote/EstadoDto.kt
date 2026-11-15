@@ -11,7 +11,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * JSON de /api/estado tal como lo arma ruta_estado() del Maestro v6. Los campos que la app no
+ * JSON de /api/estado tal como lo arma ruta_estado() del Maestro v6.2. Los campos que la app no
  * usa (velocidades, modo fuerza, actuadores, rueda) se ignoran.
  *
  * Solo "estado" es obligatorio: sin él la respuesta no se considera del robot. El resto usa
@@ -47,6 +47,9 @@ internal data class EstadoDto(
     @SerialName("descanso_seg") val descansoSeg: Long = 0L,
     @SerialName("proximo_ciclo_seg") val proximoCicloSeg: Long = SIN_DATO.toLong(),
     @SerialName("zonas") val zonas: List<Int> = emptyList(),
+    // Maestro v6.1+: estado real de los relés. Faltan en firmwares anteriores.
+    @SerialName("bomba_riego") val bombaRiego: Boolean? = null,
+    @SerialName("bomba_ferti") val bombaFerti: Boolean? = null,
 ) {
     fun aDominio(): EstadoRobot = EstadoRobot(
         estado = EstadoMaquina.desdeCodigo(estado),
@@ -85,6 +88,8 @@ internal data class EstadoDto(
         // esa cuenta no significa nada y no se muestra.
         proximoCicloSeg = proximoCicloSeg.takeIf { it >= 0 && EstadoMaquina.desdeCodigo(estado) == EstadoMaquina.ESPERANDO },
         zonas = zonas.map(NivelSuelo::desdeCodigo),
+        releRiego = bombaRiego,
+        releFerti = bombaFerti,
     )
 }
 

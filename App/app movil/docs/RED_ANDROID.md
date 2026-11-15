@@ -149,7 +149,7 @@ reglas de elección de red (`DecisorRed`) y el simulador completo por HTTP.
 
 ## 9. Observaciones del firmware que afectan a la app
 
-Revisadas en la v5.3 y confirmadas en la v6 (`FertiTrack_Maestro_v6.ino`).
+Revisadas en la v5.3 y confirmadas en la v6.2 (`FertiTrack_Maestro_v6_2.ino`).
 
 - `zona_actual` puede valer `total_zonas + 1`: tras el sensado `zonaActual` queda en `numZonas` y no
   se reinicia al terminar (`terminarRutina`), y en el riego avanza de tramo en tramo. La UI debe

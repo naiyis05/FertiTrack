@@ -5,15 +5,15 @@ FertiTrack. Sustituye a la app de escritorio (WPF) y a la app móvil anterior (R
 
 Para el robot, la app **solo habla con el Maestro** (ESP32): se conecta a su punto de acceso
 `FertiTrack_AP`, consulta `/api/estado` y envía órdenes por HTTP a `192.168.4.1`. El contrato
-HTTP sale de `App/Codigo/FertiTrack_Maestro_v6.ino`; donde la app de escritorio y el firmware
+HTTP sale de `App/Codigo/FertiTrack_Maestro_v6_2.ino`; donde la app de escritorio y el firmware
 difieren, manda el firmware. Las ESP A, B y C y la Pantalla hablan solo con el Maestro
 (ESP-NOW): la app no depende de su código. Lo único que sale a internet es el
 [asistente](#asistente-de-ia-por-voz-y-texto), y nunca por el Wi-Fi del robot.
 
-### Firmware v6
+### Firmware v6.2
 
-La v6 del Maestro (y de la ESP A) mantiene todas las rutas y campos que usa la app, así que la
-app funciona igual. Lo nuevo:
+La v6.2 del Maestro (con las ESP A, B y C v6) mantiene todas las rutas y campos que usa la app,
+así que la app funciona igual. Lo nuevo:
 
 - Velocidades, modo fuerza, tiempos de los brazos y diámetro de rueda se ajustan desde la página
   web del Maestro (`http://192.168.4.1`). `/api/estado` también los envía, pero la app no los
@@ -22,8 +22,15 @@ app funciona igual. Lo nuevo:
   Mientras dura, las rutinas quedan bloqueadas y DETENER sigue disponible.
 - Actualiza el Maestro y la ESP A juntos: solo la ESP A v6 aplica las velocidades y los tiempos
   de brazo que le envía el Maestro.
-- La ESP B v5.5 usa el mismo protocolo con el Maestro. Mide en unos 4 s en vez de 8 y muestrea
-  distinto, así que conviene repetir la calibración seco/mojado desde la página del Maestro.
+- La ESP B v6 usa el mismo protocolo con el Maestro y activa el solenoide con un MOSFET
+  (`DRIVER_MOSFET true`; con el módulo de relé hay que ponerlo en `false`). Mide en unos 4 s y
+  muestrea distinto que la v5.3, así que conviene repetir la calibración seco/mojado desde la
+  página del Maestro.
+- v6.1: "Prueba de bombas" en la página del Maestro. La app la muestra como "Prueba de bombas"
+  (sin contarla como riego) y, como `/api/estado` informa los relés reales (`bomba_riego`,
+  `bomba_ferti`), los indicadores de bombas muestran su estado real.
+- Placa nueva del Maestro (MAC `6C:C8:40:4E:57:D0`): las ESP A, B y C deben enviar a esa MAC.
+  Si una ESP sigue con la MAC vieja, el Maestro no recibe sus respuestas y marca falla 1 o 2.
 
 ## Requisitos
 

@@ -5,7 +5,7 @@ import com.fertitrack.app.domain.modelo.PuntoCalibracion
 import java.math.BigDecimal
 
 /**
- * Órdenes del Maestro v6 que usa la app, con sus parámetros de consulta exactamente como los
+ * Órdenes del Maestro v6.2 que usa la app, con sus parámetros de consulta exactamente como los
  * leen las funciones ruta_* del firmware (server.arg). Los opcionales que valen null no se
  * envían, y entonces el firmware conserva su valor actual.
  */
@@ -65,7 +65,7 @@ sealed class OrdenMaestro(
     /** /api/prueba_retorno: solo después de /api/prueba_mov. */
     data object PruebaRetorno : OrdenMaestro("api/prueba_retorno")
 
-    /** /api/prueba_sensor: 409 si ESP_B no está conectada; mide unos 4 s con la ESP_B v5.5. */
+    /** /api/prueba_sensor: 409 si ESP_B no está conectada; mide unos 4 s con la ESP_B v6. */
     data object PruebaSensor : OrdenMaestro("api/prueba_sensor")
 
     /**

@@ -37,6 +37,8 @@ fun robot(
     distanciaCm: Float = 300f,
     espB: Boolean = true,
     estadoTexto: String = estado.name,
+    releRiego: Boolean? = null,
+    releFerti: Boolean? = null,
 ): EstadoRobot = EstadoRobot(
     estado = estado,
     estadoTexto = estadoTexto,
@@ -60,4 +62,6 @@ fun robot(
     descansoSeg = descanso,
     proximoCicloSeg = proximo,
     zonas = zonas,
+    releRiego = releRiego,
+    releFerti = releFerti,
 )

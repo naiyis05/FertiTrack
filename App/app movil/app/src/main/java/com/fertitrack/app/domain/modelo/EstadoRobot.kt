@@ -1,6 +1,6 @@
 package com.fertitrack.app.domain.modelo
 
-/** Valores de `estado` en /api/estado (nombreEstado() del Maestro v6). */
+/** Valores de `estado` en /api/estado (nombreEstado() del Maestro v6.2). */
 enum class EstadoMaquina {
     ESPERANDO,
     SENSADO_AVANZANDO, SENSADO_MIDIENDO, SENSADO_RETORNANDO,
@@ -12,6 +12,9 @@ enum class EstadoMaquina {
 
     /** v6: extender o recoger un brazo a mano desde la página web del Maestro. */
     PRUEBA_BRAZO,
+
+    /** v6.1: una bomba encendida a mano desde la página web; se apaga sola. */
+    PRUEBA_BOMBA,
     EMERGENCIA,
 
     /** Cualquier texto no reconocido (el firmware envía "?" en el default). */
@@ -117,6 +120,10 @@ data class EstadoRobot(
     val proximoCicloSeg: Long?,
     /** Clasificación por zona; índice 0 = zona 1. */
     val zonas: List<NivelSuelo>,
+    /** Relé real de la bomba de riego (`bomba_riego`, Maestro v6.1+); null en firmwares anteriores. */
+    val releRiego: Boolean? = null,
+    /** Relé real de la bomba de fertilizante (`bomba_ferti`, Maestro v6.1+); null en firmwares anteriores. */
+    val releFerti: Boolean? = null,
 ) {
     val hayFalla: Boolean get() = codigoFalla != 0
 
@@ -125,12 +132,15 @@ data class EstadoRobot(
 
     val distanciaConfigurada: Boolean get() = distanciaCm > 0f && totalZonas > 0
 
-    /** El relé de riego solo se enciende sobre zonas secas con el brazo abajo (actividad 2). */
+    /**
+     * El relé real si el firmware lo informa. Si no, se deduce: el relé de riego solo se
+     * enciende sobre zonas secas con el brazo abajo (actividad 2).
+     */
     val bombaRiegoEncendida: Boolean
-        get() = estado == EstadoMaquina.RIEGO_AVANZANDO && actividad == Actividad.REGANDO
+        get() = releRiego ?: (estado == EstadoMaquina.RIEGO_AVANZANDO && actividad == Actividad.REGANDO)
 
-    /** El relé de fertilizante solo está encendido en FERTI_AVANZANDO. */
-    val bombaFertilizanteEncendida: Boolean get() = estado == EstadoMaquina.FERTI_AVANZANDO
+    /** El relé real si el firmware lo informa; si no, solo está encendido en FERTI_AVANZANDO. */
+    val bombaFertilizanteEncendida: Boolean get() = releFerti ?: (estado == EstadoMaquina.FERTI_AVANZANDO)
 
     /** Fracción 0..1 del riel recorrida según posicion_pasos; null si no hay distancia. */
     val fraccionRecorrido: Float?

@@ -299,8 +299,10 @@ internal class MaquinaRobotSimulada(
                 estadoActual = ESPERANDO
                 actividadActual = 0
             }
-            // PRUEBA_BRAZO: el simulador no implementa /api/prueba_brazo (la app no la usa).
-            ESPERANDO, PRUEBA_LISTA, EstadoMaquina.PRUEBA_BRAZO, EMERGENCIA, EstadoMaquina.DESCONOCIDO -> Unit
+            // PRUEBA_BRAZO y PRUEBA_BOMBA: el simulador no implementa esas rutas (la app no las usa).
+            ESPERANDO, PRUEBA_LISTA, EstadoMaquina.PRUEBA_BRAZO, EstadoMaquina.PRUEBA_BOMBA, EMERGENCIA,
+            EstadoMaquina.DESCONOCIDO,
+            -> Unit
         }
     }
 

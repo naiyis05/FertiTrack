@@ -298,9 +298,12 @@ class SesionTracker(private val reloj: () -> Long = System::currentTimeMillis) {
         }
     }
 
-    /** Abre o cierra el bombeo según la bomba de riego de [nuevo]. */
+    /**
+     * Abre o cierra el bombeo según la bomba de riego de [nuevo]. Solo cuenta dentro de la
+     * rutina de riego: una prueba de bombas desde la página del Maestro no es un riego.
+     */
     private fun seguirBomba(ahora: Long, nuevo: EstadoRobot) {
-        val encendida = nuevo.bombaRiegoEncendida
+        val encendida = nuevo.bombaRiegoEncendida && nuevo.estado == EstadoMaquina.RIEGO_AVANZANDO
         val actual = bombeoActual
         if (actual != null && (!encendida || nuevo.zonaActual != actual.zona)) {
             val interrumpido = nuevo.hayFalla || nuevo.estado == EstadoMaquina.EMERGENCIA

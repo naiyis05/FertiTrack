@@ -272,4 +272,15 @@ class SesionTrackerTest {
         tracker.reiniciarSesion()
         assertEquals(ResumenSesion(), r)
     }
+
+    @Test
+    fun pruebaDeBombasNoEsUnRiego() {
+        // Maestro v6.2: la bomba encendida desde "Prueba de bombas" no debe quedar como bombeo de riego.
+        paso(robot())
+        paso(robot(EstadoMaquina.PRUEBA_BOMBA, zona = 1, releRiego = true, releFerti = true))
+        paso(robot(EstadoMaquina.PRUEBA_BOMBA, zona = 1, releRiego = true, releFerti = true))
+        paso(robot(releRiego = false, releFerti = false))
+        assertTrue(r.bombeos.isEmpty())
+        assertTrue(r.riegos.isEmpty())
+    }
 }

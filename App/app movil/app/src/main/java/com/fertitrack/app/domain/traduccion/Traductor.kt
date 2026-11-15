@@ -118,6 +118,16 @@ object Traductor {
                 "Extendiendo o recogiendo un brazo desde la página del Maestro",
                 CategoriaEstado.PRUEBA,
             )
+            EstadoMaquina.PRUEBA_BOMBA -> DescripcionEstado(
+                "Prueba de bombas",
+                when {
+                    robot.bombaRiegoEncendida && robot.bombaFertilizanteEncendida -> "Las dos bombas encendidas"
+                    robot.bombaRiegoEncendida -> "Bomba de riego encendida"
+                    robot.bombaFertilizanteEncendida -> "Bomba de fertilizante encendida"
+                    else -> "Bombas apagadas"
+                } + " desde la página del Maestro; se apagan solas",
+                CategoriaEstado.PRUEBA,
+            )
             EstadoMaquina.EMERGENCIA -> {
                 val falla = describirFalla(robot.codigoFalla)
                 DescripcionEstado(
@@ -165,6 +175,7 @@ object Traductor {
         EstadoMaquina.PRUEBA_RETORNANDO -> "Prueba de distancia: volviendo"
         EstadoMaquina.PRUEBA_SENSOR -> "Prueba de sensor: midiendo"
         EstadoMaquina.PRUEBA_BRAZO -> "Prueba de brazo"
+        EstadoMaquina.PRUEBA_BOMBA -> "Prueba de bombas"
         EstadoMaquina.EMERGENCIA -> "Emergencia"
         EstadoMaquina.DESCONOCIDO -> "Estado desconocido ($textoOriginal)"
     }

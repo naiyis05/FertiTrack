@@ -1,9 +1,10 @@
-# Peticiones de cambio al firmware (Maestro v6)
+# Peticiones de cambio al firmware (Maestro v6.2)
 
 La app no modifica el firmware ni simula lo que este no ofrece. Esta lista recoge lo que
 mejoraría la app si se añadiera al Maestro. Ninguna es imprescindible para la Fase 1.
-Se hizo con la v5.3; la v6 no resuelve ninguna (solo añade velocidades, modo fuerza, actuadores,
-diámetro de rueda y prueba de brazo).
+Se hizo con la v5.3. La v6 no resolvió ninguna: solo añadió velocidades, modo fuerza,
+actuadores, diámetro de rueda y prueba de brazo. La v6.1 resuelve la mitad de la 8
+(`bomba_riego` y `bomba_ferti`).
 
 | # | Petición | Por qué | Cómo lo resuelve hoy la app |
 |---|----------|---------|-----------------------------|
@@ -14,7 +15,7 @@ diámetro de rueda y prueba de brazo).
 | 5 | `/api/iniciar` con un modo inválido debería responder 400 | Hoy responde 409, el mismo código que "sistema ocupado". | La app solo envía `ciclo`, `sensado` o `fertilizar`. |
 | 6 | Uniformar el 404: `{"ok":false,"error":"ruta no encontrada"}` | Es la única respuesta de error sin el campo `ok`. | Trata cualquier 404 como error del robot. |
 | 7 | Versión del firmware y tiempo encendido (`version`, `uptime_s`) en `/api/estado` | Permitiría detectar firmware incompatible y saber si el Maestro se reinició (la sesión de la app seguiría contando como si nada). | Sin solución; la sesión de la app dura lo que dura el proceso. |
-| 8 | Estado real de los relés y del brazo (`rele_riego`, `rele_ferti`, `brazo_riego_abajo`) | Los indicadores de bomba se deducen de `estado` + `actividad`, fiel al código actual, pero frágil si cambia la lógica. | Bomba de riego = `RIEGO_AVANZANDO` con `actividad == 2`; fertilizante = `FERTI_AVANZANDO`. |
+| 8 | Estado real del brazo (`brazo_riego_abajo`, `brazo_ferti_abajo`). Los relés ya llegan desde la v6.1 (`bomba_riego`, `bomba_ferti`). | Tras una prueba de brazo, el robot vuelve a `ESPERANDO` aunque el brazo haya quedado extendido, y la app no lo sabe. | Bombas: usa el relé real si llega; si no, la deducción de antes (riego = `RIEGO_AVANZANDO` con `actividad == 2`; fertilizante = `FERTI_AVANZANDO`). Brazos: sin solución. |
 | 9 | Servidor web no bloqueante, o un tiempo máximo por petición | `server.handleClient()` corre dentro de `loop()`: cada petición retrasa la máquina de estados del robot. | Una sola petición en vuelo, sondeo cada 1,5 s y timeout de 3 s. |
 | 10 | Acotar `zona_actual` a `total_zonas` en `ruta_estado` | Tras el sensado `zonaActual` queda en `numZonas` (no se reinicia en `terminarRutina`) y en el riego avanza por tramos, así que puede llegar `total_zonas + 1`. | La app lo acota al traducir el JSON. |
 | 11 | Poner `esperandoProximoCiclo = false` en `iniciarSensado` e `iniciarFertilizacion` | Con el automático activo, si se inicia una rutina a mano, `proximo_ciclo_seg` sigue descontando durante la rutina (y se reprograma al terminar), así que la cuenta no significa nada. | La app solo muestra la cuenta atrás en `ESPERANDO`. |

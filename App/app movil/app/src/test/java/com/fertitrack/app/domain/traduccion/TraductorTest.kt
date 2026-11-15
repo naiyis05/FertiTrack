@@ -37,6 +37,8 @@ class TraductorTest {
         assertEquals(CategoriaEstado.ARRANQUE, Traductor.describirEstado(robot(EstadoMaquina.ARRANQUE)).categoria)
         assertEquals(CategoriaEstado.PRUEBA, Traductor.describirEstado(robot(EstadoMaquina.PRUEBA_LISTA)).categoria)
         assertEquals(CategoriaEstado.PRUEBA, Traductor.describirEstado(robot(EstadoMaquina.PRUEBA_BRAZO)).categoria)
+        assertEquals(CategoriaEstado.PRUEBA, Traductor.describirEstado(robot(EstadoMaquina.PRUEBA_BOMBA)).categoria)
+        assertEquals("Prueba de bombas", Traductor.describirEstado(robot(EstadoMaquina.PRUEBA_BOMBA)).titulo)
         assertEquals(CategoriaEstado.EMERGENCIA, Traductor.describirEstado(robot(EstadoMaquina.EMERGENCIA, falla = 9)).categoria)
         assertEquals(CategoriaEstado.DESCONOCIDO, Traductor.describirEstado(robot(EstadoMaquina.DESCONOCIDO)).categoria)
     }

@@ -101,6 +101,35 @@ class ParserMaestroTest {
     }
 
     @Test
+    fun maestroV62PruebaDeBombasConRelesReales() {
+        val e = FixturesMaestro.estado(FixturesMaestro.ESTADO_PRUEBA_BOMBA_V62)
+        assertEquals(EstadoMaquina.PRUEBA_BOMBA, e.estado)
+        assertEquals(true, e.releRiego)
+        assertEquals(false, e.releFerti)
+        assertTrue(e.bombaRiegoEncendida)
+        assertFalse(e.bombaFertilizanteEncendida)
+        assertFalse(e.listoParaRutinas)
+    }
+
+    @Test
+    fun sinCamposDeRelesSeDeduceComoAntes() {
+        val e = FixturesMaestro.estado(FixturesMaestro.ESTADO_PRUEBA_BRAZO_V6)
+        assertNull(e.releRiego)
+        assertNull(e.releFerti)
+        val regando = FixturesMaestro.estado("""{"estado":"RIEGO_AVANZANDO","actividad":2}""")
+        assertTrue(regando.bombaRiegoEncendida)
+        assertTrue(FixturesMaestro.estado("""{"estado":"FERTI_AVANZANDO"}""").bombaFertilizanteEncendida)
+    }
+
+    @Test
+    fun elReleRealTienePrioridadSobreLaDeduccion() {
+        val riegoApagado = FixturesMaestro.estado("""{"estado":"RIEGO_AVANZANDO","actividad":2,"bomba_riego":false}""")
+        assertFalse(riegoApagado.bombaRiegoEncendida)
+        val fertiApagado = FixturesMaestro.estado("""{"estado":"FERTI_AVANZANDO","bomba_ferti":false}""")
+        assertFalse(fertiApagado.bombaFertilizanteEncendida)
+    }
+
+    @Test
     fun camposQueFaltanONulosUsanValoresSeguros() {
         val e = FixturesMaestro.estado("""{"estado":"ESPERANDO","humedad_pct":null,"zonas":null}""")
         assertEquals(0, e.totalZonas)

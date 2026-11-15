@@ -48,5 +48,14 @@ internal object FixturesMaestro {
         "act_ext_ms":5010,"act_rec_ms":5120,"diametro_rueda_cm":10.19,"proximo_ciclo_seg":-1,
         "zonas":[1,2,3,4,1,2]}"""
 
+    /** Maestro v6.2 con la bomba de riego encendida desde "Prueba de bombas" (relés reales). */
+    const val ESTADO_PRUEBA_BOMBA_V62 = """{"estado":"PRUEBA_BOMBA","modo_rutina":"NINGUNA","zona_actual":1,
+        "total_zonas":6,"distancia_cm":300,"ancho_zona_cm":50,"pasos_por_cm":100,"posicion_pasos":0,
+        "humedad_adc":3300,"humedad_pct":27.46114,"cal_seco":4095,"cal_mojado":1200,"pct_seca":35,
+        "pct_humeda":65,"pct_sobre":90,"umbral_seco":3082,"umbral_humedo":2213,"umbral_sobre":1490,
+        "nivel_suelo":1,"actividad":2,"falla":0,"esp_b_conectada":true,"esp_c_conectada":true,
+        "auto_activo":false,"descanso_seg":60,"bomba_riego":true,"bomba_ferti":false,
+        "proximo_ciclo_seg":-1,"zonas":[1,2,3,4,1,2]}"""
+
     fun estado(json: String): EstadoRobot = checkNotNull(ParserMaestro.parsearEstado(json)) { "fixture inválida" }
 }
