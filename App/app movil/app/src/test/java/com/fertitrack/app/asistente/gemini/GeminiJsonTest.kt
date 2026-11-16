@@ -48,6 +48,16 @@ class GeminiJsonTest {
     }
 
     @Test
+    fun peticionSinBusquedaNoLlevaHerramientaYLoAvisa() {
+        val historial = listOf(TurnoChat(true, "hola"))
+        val p = objeto(GeminiJson.peticion(historial, "C", "SISTEMA", conBusqueda = false))
+        assertNull(p["tools"])
+        val sistema = p["systemInstruction"]!!.jsonObject["parts"]!!.jsonArray[0].jsonObject["text"]!!.jsonPrimitive.content
+        assertTrue(sistema.startsWith("SISTEMA"))
+        assertTrue(sistema.endsWith(GeminiJson.SIN_BUSQUEDA))
+    }
+
+    @Test
     fun partesDelModeloSeReenvianTalCual() {
         val partes = Json.parseToJsonElement("""[{"text":"hola","thoughtSignature":"abc"}]""").jsonArray
         val historial = listOf(TurnoChat(true, "a"), TurnoChat(false, "hola", partes), TurnoChat(true, "b"))
