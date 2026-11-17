@@ -9,6 +9,7 @@ object TextosAsistente {
     const val SIN_RECONOCEDOR = "Este teléfono no tiene reconocimiento de voz. Puedes escribir tu pregunta."
     const val SOLO_ACCION = "Listo."
 
+    /** Lo que se muestra en pantalla: incluye los nombres de archivo para quien instala la app. */
     fun fallo(tipo: TipoFallo): String = when (tipo) {
         TipoFallo.SIN_CLAVE ->
             "Falta la clave de Gemini: agrégala en local.properties (fertitrack.gemini.apiKey) y vuelve a instalar la app."
@@ -20,6 +21,20 @@ object TextosAsistente {
         TipoFallo.MODELO_NO_EXISTE -> "El modelo de Gemini configurado no existe. Revisa fertitrack.gemini.modelo en gradle.properties."
         TipoFallo.SERVIDOR -> "Gemini no respondió a tiempo. Vuelve a intentarlo."
         TipoFallo.RESPUESTA_RARA -> "Gemini respondió algo que la app no entiende. Vuelve a intentarlo."
+        TipoFallo.PETICION_RECHAZADA -> "Gemini no aceptó la conversación. Empiezo una nueva: vuelve a hacer tu pregunta."
+    }
+
+    /**
+     * Lo que se lee en voz alta: sin nombres de archivo ni de propiedades, que la voz deletrea
+     * mal y a quien escucha no le sirven. El detalle técnico queda escrito en pantalla.
+     */
+    fun falloHablado(tipo: TipoFallo): String = when (tipo) {
+        TipoFallo.SIN_CLAVE -> "Todavía no tengo la clave de Gemini. Quien instala la app debe agregarla; los pasos están en pantalla."
+        TipoFallo.CLAVE_INVALIDA -> "Google rechazó la clave de Gemini. Quien instala la app debe revisarla; los detalles están en pantalla."
+        TipoFallo.MODELO_NO_EXISTE -> "El modelo de Gemini configurado no existe. Quien instala la app debe cambiarlo; los detalles están en pantalla."
+        TipoFallo.SIN_INTERNET ->
+            "No tengo internet. El Wi-Fi del robot no da internet: usa datos móviles u otra red y vuelve a preguntar."
+        else -> fallo(tipo)
     }
 
     fun rutinaNoDisponible(motivo: String): String = "Ahora no se puede: ${motivo.trimEnd('.')}."

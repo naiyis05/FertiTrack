@@ -106,7 +106,7 @@ class GeminiJsonTest {
         assertEquals(RESPUESTA_RARA, tipo(200, """{"candidates":[]}"""))
         assertEquals(RESPUESTA_RARA, tipo(200, """{"candidates":[{"content":{"parts":[{"text":"solo pienso","thought":true}]},"finishReason":"STOP"}]}"""))
         assertEquals(RESPUESTA_RARA, tipo(200, "<html>"))
-        assertEquals(RESPUESTA_RARA, tipo(400, """{"error":{"code":400,"message":"Invalid JSON payload"}}"""))
+        assertEquals(TipoFallo.PETICION_RECHAZADA, tipo(400, """{"error":{"code":400,"message":"Invalid JSON payload"}}"""))
     }
 
     @Test

@@ -292,7 +292,14 @@ private fun SugerenciasBusqueda(html: String) {
                 }
             }
         },
-        update = { it.loadDataWithBaseURL(null, html, "text/html", "utf-8", null) },
+        // update corre en cada recomposición (cada mensaje nuevo, cada cambio de voz): solo se
+        // recarga si el HTML cambió, para que no parpadee ni vuelva a ejecutar su JavaScript.
+        update = { vista ->
+            if (vista.tag != html) {
+                vista.tag = html
+                vista.loadDataWithBaseURL(null, html, "text/html", "utf-8", null)
+            }
+        },
         modifier = Modifier.fillMaxWidth().height(64.dp),
     )
 }
