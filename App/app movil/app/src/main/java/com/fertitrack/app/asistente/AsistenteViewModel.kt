@@ -10,6 +10,7 @@ import com.fertitrack.app.FertiTrackApp
 import com.fertitrack.app.asistente.gemini.Cerebro
 import com.fertitrack.app.asistente.gemini.Fuente
 import com.fertitrack.app.asistente.gemini.RespuestaCerebro
+import com.fertitrack.app.asistente.gemini.TipoFallo
 import com.fertitrack.app.asistente.gemini.TurnoChat
 import com.fertitrack.app.asistente.voz.EntradaVoz
 import com.fertitrack.app.asistente.voz.EntradaVozAndroid
@@ -181,9 +182,12 @@ class AsistenteViewModel(
 
     private fun alFallar(f: RespuestaCerebro.Fallo) {
         quitarPreguntaSinRespuesta()
-        val aviso = TextosAsistente.fallo(f.tipo)
-        agregar(MensajeChat(nuevoId(), deUsuario = false, texto = aviso, esError = true))
-        if (_estado.value.vozActivada) salida.hablar(aviso)
+        // Un 400 suele venir del historial (p. ej., partes del modelo que Google ya no acepta):
+        // repetir con el mismo historial fallaría siempre. Se empieza de cero para Gemini; los
+        // mensajes en pantalla se conservan.
+        if (f.tipo == TipoFallo.PETICION_RECHAZADA) turnos.clear()
+        agregar(MensajeChat(nuevoId(), deUsuario = false, texto = TextosAsistente.fallo(f.tipo), esError = true))
+        if (_estado.value.vozActivada) salida.hablar(TextosAsistente.falloHablado(f.tipo))
     }
 
     override fun alternarMicrofono() {

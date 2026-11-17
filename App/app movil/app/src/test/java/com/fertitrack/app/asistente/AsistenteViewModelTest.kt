@@ -124,12 +124,36 @@ class AsistenteViewModelTest {
         assertTrue(aviso.esError)
         assertEquals(TextosAsistente.fallo(TipoFallo.SIN_INTERNET), aviso.texto)
         assertFalse(estado.pensando)
-        assertEquals(listOf(aviso.texto), salida.dichos)
+        assertEquals(listOf(TextosAsistente.falloHablado(TipoFallo.SIN_INTERNET)), salida.dichos)
 
         vm.alternarVoz()
         cerebro.respuestas += RespuestaCerebro.Fallo(TipoFallo.SIN_INTERNET)
         vm.enviarTexto("hola otra vez")
         assertEquals(1, salida.dichos.size)
+    }
+
+    @Test
+    fun avisosDeConfiguracionSeEscribenConDetalleYSeDicenSinNombresTecnicos() = runTest(despachador) {
+        for (tipo in listOf(TipoFallo.SIN_CLAVE, TipoFallo.CLAVE_INVALIDA, TipoFallo.MODELO_NO_EXISTE)) {
+            cerebro.respuestas += RespuestaCerebro.Fallo(tipo)
+            vm.enviarTexto("hola")
+            assertEquals(TextosAsistente.fallo(tipo), estado.mensajes.last().texto)
+            val dicho = salida.dichos.last()
+            assertFalse(dicho, dicho.contains("properties") || dicho.contains("fertitrack.") || dicho.contains("."+"gemini"))
+        }
+    }
+
+    @Test
+    fun peticionRechazadaEmpiezaUnaConversacionNueva() = runTest(despachador) {
+        vm.enviarTexto("primera")
+        cerebro.respuestas += RespuestaCerebro.Fallo(TipoFallo.PETICION_RECHAZADA)
+        vm.enviarTexto("segunda")
+        assertEquals(TextosAsistente.fallo(TipoFallo.PETICION_RECHAZADA), estado.mensajes.last().texto)
+
+        // Gemini ya no recibe lo anterior; en pantalla sigue todo.
+        vm.enviarTexto("tercera")
+        assertEquals(listOf("tercera"), cerebro.ultimoHistorial.map { it.texto })
+        assertTrue(estado.mensajes.any { it.texto == "primera" })
     }
 
     @Test

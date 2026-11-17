@@ -15,7 +15,12 @@ data class TurnoChat(
 /** Página que Gemini consultó al buscar en Google. */
 data class Fuente(val titulo: String, val url: String)
 
-enum class TipoFallo { SIN_CLAVE, SIN_INTERNET, CLAVE_INVALIDA, CUOTA, BLOQUEADA, MODELO_NO_EXISTE, SERVIDOR, RESPUESTA_RARA }
+enum class TipoFallo {
+    SIN_CLAVE, SIN_INTERNET, CLAVE_INVALIDA, CUOTA, BLOQUEADA, MODELO_NO_EXISTE, SERVIDOR, RESPUESTA_RARA,
+
+    /** 400 que no es de la clave: Google no aceptó la petición (casi siempre, el historial). */
+    PETICION_RECHAZADA,
+}
 
 sealed interface RespuestaCerebro {
     /**

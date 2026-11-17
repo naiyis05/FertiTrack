@@ -41,6 +41,7 @@ import org.robolectric.annotation.GraphicsMode
  * Capturas PNG de cada pestaña, de Conexión y del overlay de confirmación, en tema claro y
  * oscuro, en app/build/capturas/. Usa los gráficos nativos de Robolectric (dibujo real).
  * Pantalla de 411 × 1200 dp: algo más alta que un teléfono para revisar más contenido de una vez.
+ * Las principales también en tablet (horizontal y vertical), con el prefijo tablet_h_ o tablet_v_.
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -146,6 +147,16 @@ class CapturasPantallas {
         principales + adicionales.filter { it.nombre in setOf("inicio_emergencia", "zonas_150", "conexion_simulador") },
         oscuro = true,
     )
+
+    /** Tablet en horizontal (1280 × 800 dp), como la tablet de pruebas del invernadero. */
+    @Test
+    @Config(qualifiers = "w1280dp-h800dp-land-mdpi")
+    fun capturasTabletHorizontal() = capturar(principales.map { it.copy(nombre = "tablet_h_${it.nombre}") }, oscuro = false)
+
+    /** Tablet en vertical (800 × 1280 dp). */
+    @Test
+    @Config(qualifiers = "w800dp-h1280dp-port-mdpi")
+    fun capturasTabletVertical() = capturar(principales.map { it.copy(nombre = "tablet_v_${it.nombre}") }, oscuro = false)
 
     private fun capturar(escenas: List<Escena>, oscuro: Boolean) {
         val acciones = DobleAcciones()

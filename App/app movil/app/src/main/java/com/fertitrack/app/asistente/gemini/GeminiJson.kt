@@ -99,6 +99,7 @@ object GeminiJson {
             mensaje?.contains("API key", ignoreCase = true) == true
         val tipo = when {
             codigo == 400 && claveInvalida -> TipoFallo.CLAVE_INVALIDA
+            codigo == 400 -> TipoFallo.PETICION_RECHAZADA
             codigo == 401 || codigo == 403 -> TipoFallo.CLAVE_INVALIDA
             codigo == 404 -> TipoFallo.MODELO_NO_EXISTE
             codigo == 429 -> TipoFallo.CUOTA
