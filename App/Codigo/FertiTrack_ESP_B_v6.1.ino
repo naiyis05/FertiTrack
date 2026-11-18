@@ -1,107 +1,52 @@
 /*
   =========================================================================
-  FertiTrack_ESP_B_v5.8.ino — ESP_B (sensor de humedad + solenoide JF-0530B)
+  FertiTrack_ESP_B_v5.9.ino — ESP_B (sensor de humedad + solenoide JF-0530B)
   Placa : ESP32 Dev Module — Core Espressif 3.x.x
   MAC de ESTE ESP32 (ESP_B) : CC:DB:A7:34:A0:FC
-  MAC del MAESTRO (la vieja, AÚN SIN CAMBIAR): 20:50:0D:10:1E:E0
+  MAC del MAESTRO (la nueva, igual que en ESP_A y ESP_C): 6C:C8:40:4E:57:D0
   =========================================================================
 
   -------------------------------------------------------------------
-  QUÉ CAMBIA EN v5.8 (respecto a v5.7) — DRIVER MOSFET
+  QUÉ CAMBIA EN v5.9 — CICLO DE "DISPARO"
   -------------------------------------------------------------------
-  1) Nueva opción DRIVER_MOSFET (true por defecto). Con MOSFET de nivel
-     lógico la lógica es la CONTRARIA al relé:
-         GPIO26 = HIGH → solenoide ENERGIZADO
-         GPIO26 = LOW  → solenoide apagado (pin siempre en OUTPUT/LOW)
-     Si vuelves al módulo de relé azul, pon DRIVER_MOSFET false.
-  2) Los tiempos largos de v5.7 NO ayudaron (el problema era eléctrico) y
-     solo calientan la bobina: vuelven a 800 ms de inserción y 800 ms de
-     retracción (ON por ciclo ≈ 3.3 s). Pulso de prueba "p": 1.5 s.
-     Los tiempos guardados en NVS se reinician una vez (VERSION_NVS=58).
-  3) Todo lo demás igual: sin enfriamiento, vigilante de 8 s, motivo del
-     reinicio al arrancar, prueba de banco por Serial.
+  Hasta v5.8 el solenoide se energizaba durante TODA la medición. Como al
+  energizar el émbolo se RECOGE, el sensor medía recogido, fuera de la
+  tierra. Ahora el solenoide solo "arma" y "suelta":
 
-  CONEXIÓN DEL MOSFET (IRLZ44N, pines mirando de frente: G-D-S)
-     GPIO26 → resistencia 220 Ω → G (compuerta)
-     G → resistencia 10 kΩ → GND      (arranca siempre apagado)
-     S (source) → GND común (GND del buck y GND del ESP32 unidos)
-     D (drain)  → cable NEGRO del solenoide
-     Cable ROJO del solenoide → +6 V del buck
-     Diodo 1N4007 en antiparalelo en los bornes del solenoide
-     (banda al rojo/+6 V). Condensador 470–2200 µF en la línea de 6 V.
+     1) ARMANDO     relé/MOSFET ON  (tiempoArmadoMs, ~250 ms)
+                    el émbolo se recoge y carga el resorte.
+     2) DISPARANDO  OFF. El resorte suelta el émbolo y clava el sensor
+                    en la tierra (tiempoInsercionMs, ~300 ms). Aquí se
+                    ENCIENDE la alimentación del sensor.
+     3) MIDIENDO    OFF (bobina fría). Estabiliza y toma muestras con el
+                    sensor ya enterrado.
+     4) EXTRAYENDO  ON brevemente (tiempoRetraccionMs, ~1 s) para sacar
+                    el sensor de la tierra. Pon EXTRAER_AL_FINAL false si
+                    no quieres este paso. Luego OFF y envía HUMEDAD.
 
-  -------------------------------------------------------------------
-  CAMBIOS ANTERIORES — v5.7 (respecto a v5.6)
-  -------------------------------------------------------------------
-  1) SE QUITÓ la espera de enfriamiento entre ciclos. Se pueden mandar
-     "p" / "m" / MEDIR seguidos. Se conserva SOLO el vigilante de relé
-     encendido (TIEMPO_ON_MAX_MS) para que un fallo nunca deje el
-     solenoide energizado de forma indefinida.
+  Tiempo ON total por ciclo ≈ 1.3 s (antes ≈ 3.3 s): la bobina trabaja
+  mucho menos y se calienta mucho menos.
 
-  2) TIEMPOS MÁS LARGOS (por defecto):
-        inserción 1500 ms (antes 500)    estabilizar 700 ms
-        muestreo  1800 ms                retracción  1500 ms (antes 500)
-        → relé ON por ciclo ≈ 4.0 s      vigilante: 8 s (antes 5 s)
-     Pulso de prueba "p": 3 s (antes 1 s). En el Monitor Serie:
-        '+' sube 0.5 s el pulso de prueba, '-' lo baja 0.5 s (0.5–6 s).
-     Al subir de versión, los tiempos guardados en NVS se reinician a
-     estos valores una sola vez (si el Maestro los calibra luego con
-     SOL_*, se vuelven a guardar).
+  PRUEBA DE BANCO por el Monitor Serie (115200):
+     p  → solo el DISPARO (arma y suelta), sin medir. Pon la mano o la
+          tierra delante del sensor para ver si se clava.
+     +  → sube el tiempo de armado 50 ms      - → lo baja 50 ms
+          (si el émbolo no alcanza a recogerse del todo, súbelo; el
+           valor se guarda). Rango 100–1500 ms.
+     m  → ciclo completo      s → STOP      r → RESET
 
-  3) DIAGNÓSTICO DEL REINICIO: al arrancar imprime el MOTIVO del reset.
-        BROWNOUT → el 3.3 V del ESP32 cayó (problema de alimentación)
-        POWERON  → la placa perdió y recuperó la alimentación por completo
-        PANIC/WDT→ error de software
-     Si tras cada "p" ves BROWNOUT o POWERON, el problema es eléctrico,
-     no del código (ver abajo).
-
-  4) Ya no se imprime por Serial antes de Serial.begin() (eso producía
-     texto cortado como "[SOL] OFF (resorte sube el senso...").
+  PROTOCOLO con el Maestro — SIN CAMBIOS (MEDIR/STOP/RESET/HUMEDAD).
+  SOL_INS = espera tras soltar   SOL_RET = tiempo de extracción
+  SOL_EST / SOL_MED = estabilizar / muestrear
+  NUEVO opcional: SOL_ARM = tiempo de armado (el Maestro no lo necesita).
 
   -------------------------------------------------------------------
-  SI EL ESP32 SE REINICIA AL ACTIVAR EL SOLENOIDE (causa eléctrica)
+  DRIVER (MOSFET por defecto, como v5.8)
   -------------------------------------------------------------------
-  El solenoide pide ~1 A de golpe y al soltarlo genera un pico de
-  voltaje inverso. Si comparte alimentación o cables de GND con el ESP32:
-    - La alimentación cae (BROWNOUT) o el USB del PC se reinicia
-      ("Not connected" en el Monitor Serie).
-    - Con el voltaje caído, el solenoide tampoco tiene fuerza: por eso
-      solo recorre una fracción de la carrera.
-  Soluciones, de más a menos importante:
-    a) Diodo 1N4007 EN ANTIPARALELO directo en los bornes del solenoide
-       (banda al rojo/+6 V). Sin él, el pico reinicia el ESP32.
-    b) El ESP32 por su USB, y el buck/solenoide desde una fuente APARTE
-       (adaptador o batería) capaz de dar ≥2 A. Une solo los GND.
-    c) Cables gruesos (≥22 AWG) y empalmados/atornillados para los 6 V y
-       el solenoide. Los Dupont no sirven para 1 A (caen voltaje).
-    d) Condensador de 470–2200 µF cerca del solenoide, en la línea de 6 V.
-    e) Cable USB corto y bueno, directo al PC (sin hub).
-
-  -------------------------------------------------------------------
-  CONVENCIÓN MECÁNICA (igual que v5.6)
-  -------------------------------------------------------------------
-         relé OFF (reposo, frío) → sensor ARRIBA, fuera de la tierra
-         relé ON  (pulso)        → sensor ABAJO, dentro de la tierra
-  El sensor va en el extremo del émbolo que SALE cuando se activa el relé.
-
-  -------------------------------------------------------------------
-  PROTOCOLO — SIN CAMBIOS
-  -------------------------------------------------------------------
-  Maestro → ESP_B : "MEDIR", "STOP", "RESET",
-                    "SOL_INS" / "SOL_EST" / "SOL_MED" / "SOL_RET" (ms)
-  ESP_B  → Maestro : "HUMEDAD" (ADC promedio 0-4095, alto = suelo seco)
-
-  -------------------------------------------------------------------
-  HARDWARE
-  -------------------------------------------------------------------
-  PIN_PISTON_RELE    = 26  IN del módulo de relé de 1 canal (activo en LOW).
-  PIN_SENSOR_HUMEDAD = 34  ADC1_CH6, sale del AO del módulo LM393.
-  PIN_SENSOR_ALIM    = 25  alimenta el VCC del módulo solo al medir.
-
-  CONEXIÓN DEL SOLENOIDE:
-    Rojo del solenoide  → +6 V (salida del buck, medir con multímetro)
-    Negro del solenoide → COM del relé
-    NO del relé         → GND de la fuente de 6 V
+     GPIO26 → 220 Ω → G del IRLZ44N, G → 10 kΩ → GND
+     S → GND común   D → cable NEGRO del solenoide   ROJO → +6 V
+     Diodo 1N4007 en antiparalelo en los bornes del solenoide.
+  DRIVER_MOSFET false = módulo de relé azul (activo en LOW).
   =========================================================================
 */
 
@@ -115,12 +60,12 @@
 // TIPOS
 // ─────────────────────────────────────────────────────────────────────
 enum EstadoB {
-  EB_REPOSO,          // relé OFF, esperando "MEDIR"
-  EB_INSERTANDO,      // relé ON: sensor bajando a la tierra
-  EB_MIDIENDO,        // relé ON: sensor en la tierra, tomando muestras
-  EB_RETRACTANDO,     // relé OFF: el resorte sube el sensor
-  EB_PRUEBA,          // relé ON (prueba de banco por Serial)
-  EB_EMERGENCIA       // relé OFF, esperando RESET
+  EB_REPOSO,          // solenoide OFF, esperando "MEDIR"
+  EB_ARMANDO,         // solenoide ON: el émbolo se recoge (carga el resorte)
+  EB_DISPARANDO,      // solenoide OFF: el resorte clava el sensor
+  EB_MIDIENDO,        // solenoide OFF: sensor enterrado, tomando muestras
+  EB_EXTRAYENDO,      // solenoide ON: saca el sensor de la tierra
+  EB_EMERGENCIA       // solenoide OFF, esperando RESET
 };
 
 typedef struct {
@@ -131,7 +76,6 @@ typedef struct {
 
 struct ComandoRx { char cmd[20]; int param; };
 
-
 // ─────────────────────────────────────────────────────────────────────
 // RED
 // ─────────────────────────────────────────────────────────────────────
@@ -139,7 +83,7 @@ const int CANAL_WIFI = 1;
 uint8_t MAC_MAESTRO[] = {0x6C, 0xC8, 0x40, 0x4E, 0x57, 0xD0};
 
 // ─────────────────────────────────────────────────────────────────────
-// PINES
+// PINES Y DRIVER
 // ─────────────────────────────────────────────────────────────────────
 #define PIN_PISTON_RELE    26
 #define PIN_SENSOR_HUMEDAD 34
@@ -148,32 +92,32 @@ uint8_t MAC_MAESTRO[] = {0x6C, 0xC8, 0x40, 0x4E, 0x57, 0xD0};
 // true  = MOSFET de nivel lógico: HIGH enciende, LOW apaga.
 // false = módulo de relé azul: LOW enciende, y apagado = pin suelto (INPUT).
 #define DRIVER_MOSFET true
+#define RELE_OFF_COMO_ENTRADA true   // solo se usa con relé
 
-// (Solo relé) Relé activo en LOW. El "apagado" se hace soltando el pin (INPUT) para
-// que un HIGH de 3.3 V no deje medio activado el optoacoplador de 5 V.
-// Pon false solo si tu módulo corta bien con digitalWrite(HIGH).
-#define RELE_OFF_COMO_ENTRADA true
-
-// ─────────────────────────────────────────────────────────────────────
-// TIEMPOS DEL CICLO (ajustables desde el Maestro vía SOL_*, en NVS)
-// ─────────────────────────────────────────────────────────────────────
-const unsigned long DEF_INSERCION_MS   = 800;
-const unsigned long DEF_ESTABILIZAR_MS = 700;
-const unsigned long DEF_MUESTREO_MS    = 1800;
-const unsigned long DEF_RETRACCION_MS  = 800;
-
-unsigned long tiempoInsercionMs   = DEF_INSERCION_MS;    // sensor baja
-unsigned long tiempoEstabilizarMs = DEF_ESTABILIZAR_MS;  // contacto estable
-unsigned long tiempoMuestreoMs    = DEF_MUESTREO_MS;     // ventana de muestreo
-unsigned long tiempoRetraccionMs  = DEF_RETRACCION_MS;   // el resorte sube
-
-const uint32_t VERSION_NVS = 58;   // sube este número para forzar valores por defecto
+// Sacar el sensor de la tierra al terminar de medir (energiza ~1 s)
+#define EXTRAER_AL_FINAL true
 
 // ─────────────────────────────────────────────────────────────────────
-// SEGURIDAD
+// TIEMPOS DEL CICLO (ajustables, se guardan en NVS)
 // ─────────────────────────────────────────────────────────────────────
-const unsigned long TIEMPO_ON_MAX_MS = 8000;   // el relé jamás pasa de esto encendido
-unsigned long pulsoPruebaMs = 1500;            // ajustable con '+' / '-'
+const unsigned long DEF_ARMADO_MS      = 250;   // ON: recoger el émbolo
+const unsigned long DEF_INSERCION_MS   = 300;   // OFF: el resorte clava el sensor
+const unsigned long DEF_ESTABILIZAR_MS = 500;   // OFF: contacto estable antes de muestrear
+const unsigned long DEF_MUESTREO_MS    = 1800;  // OFF: ventana de muestreo
+const unsigned long DEF_RETRACCION_MS  = 1000;  // ON: sacar el sensor de la tierra
+
+unsigned long tiempoArmadoMs      = DEF_ARMADO_MS;
+unsigned long tiempoInsercionMs   = DEF_INSERCION_MS;
+unsigned long tiempoEstabilizarMs = DEF_ESTABILIZAR_MS;
+unsigned long tiempoMuestreoMs    = DEF_MUESTREO_MS;
+unsigned long tiempoRetraccionMs  = DEF_RETRACCION_MS;
+
+const uint32_t VERSION_NVS = 59;   // sube este número para forzar valores por defecto
+
+// ─────────────────────────────────────────────────────────────────────
+// SEGURIDAD: ninguna fase con el solenoide ON puede pasar de esto
+// ─────────────────────────────────────────────────────────────────────
+const unsigned long TIEMPO_ON_MAX_MS = 4000;
 
 // ─────────────────────────────────────────────────────────────────────
 // MUESTREO
@@ -188,22 +132,25 @@ const int           RECORTE_PCT          = 10;
 // ─────────────────────────────────────────────────────────────────────
 Preferences prefs;
 
-void guardarTiemposSolenoide() {
+void guardarTiempos() {
+  prefs.putULong("sol_arm", tiempoArmadoMs);
   prefs.putULong("sol_ins", tiempoInsercionMs);
   prefs.putULong("sol_est", tiempoEstabilizarMs);
   prefs.putULong("sol_med", tiempoMuestreoMs);
   prefs.putULong("sol_ret", tiempoRetraccionMs);
 }
-void cargarTiemposSolenoide() {
-  if (prefs.getUInt("ver", 0) != VERSION_NVS) {     // primera vez con v5.8
+void cargarTiempos() {
+  if (prefs.getUInt("ver", 0) != VERSION_NVS) {     // primera vez con esta versión
+    tiempoArmadoMs      = DEF_ARMADO_MS;
     tiempoInsercionMs   = DEF_INSERCION_MS;
     tiempoEstabilizarMs = DEF_ESTABILIZAR_MS;
     tiempoMuestreoMs    = DEF_MUESTREO_MS;
     tiempoRetraccionMs  = DEF_RETRACCION_MS;
-    guardarTiemposSolenoide();
+    guardarTiempos();
     prefs.putUInt("ver", VERSION_NVS);
     return;
   }
+  tiempoArmadoMs      = prefs.getULong("sol_arm", DEF_ARMADO_MS);
   tiempoInsercionMs   = prefs.getULong("sol_ins", DEF_INSERCION_MS);
   tiempoEstabilizarMs = prefs.getULong("sol_est", DEF_ESTABILIZAR_MS);
   tiempoMuestreoMs    = prefs.getULong("sol_med", DEF_MUESTREO_MS);
@@ -217,9 +164,9 @@ MensajeFertiTrack msgEnviar;
 EstadoB       estadoActual        = EB_REPOSO;
 unsigned long tiempoInicioEtapa   = 0;
 unsigned long ultimaMuestraMillis = 0;
-unsigned long relePrendidoDesde   = 0;   // 0 = relé apagado
-unsigned long muestreoEfectivoMs  = 0;   // ventana real de este ciclo
+unsigned long relePrendidoDesde   = 0;   // 0 = solenoide apagado
 bool          serialListo         = false;
+bool          soloDisparo         = false;   // true = prueba 'p': arma, suelta y termina
 int           muestras[MAX_MUESTRAS];
 int           cantidadMuestras    = 0;
 int           ultimaLecturaPromedio = -1;
@@ -233,33 +180,33 @@ volatile bool colaDesbordada = false;
 portMUX_TYPE muxCola = portMUX_INITIALIZER_UNLOCKED;
 
 // ─────────────────────────────────────────────────────────────────────
-// CONTROL DEL SOLENOIDE (única vía para tocar el pin del relé)
+// CONTROL DEL SOLENOIDE (única vía para tocar el pin del driver)
 // ─────────────────────────────────────────────────────────────────────
 void solenoidON() {
 #if DRIVER_MOSFET
-  digitalWrite(PIN_PISTON_RELE, HIGH);      // MOSFET: HIGH = conduce
+  digitalWrite(PIN_PISTON_RELE, HIGH);
   pinMode(PIN_PISTON_RELE, OUTPUT);
 #else
-  digitalWrite(PIN_PISTON_RELE, LOW);       // relé: LOW = activo
+  digitalWrite(PIN_PISTON_RELE, LOW);
   pinMode(PIN_PISTON_RELE, OUTPUT);
 #endif
   relePrendidoDesde = millis();
   if (relePrendidoDesde == 0) relePrendidoDesde = 1;
-  if (serialListo) Serial.println("[SOL] ON  (pulso: sensor baja)");
+  if (serialListo) Serial.println("[SOL] ON  (se recoge el embolo)");
 }
 
 void solenoidOFF() {
 #if DRIVER_MOSFET
-  digitalWrite(PIN_PISTON_RELE, LOW);       // MOSFET: LOW = apagado
+  digitalWrite(PIN_PISTON_RELE, LOW);
   pinMode(PIN_PISTON_RELE, OUTPUT);
 #elif RELE_OFF_COMO_ENTRADA
-  pinMode(PIN_PISTON_RELE, INPUT);          // alta impedancia → relé suelta seguro
+  pinMode(PIN_PISTON_RELE, INPUT);
 #else
   pinMode(PIN_PISTON_RELE, OUTPUT);
   digitalWrite(PIN_PISTON_RELE, HIGH);
 #endif
   relePrendidoDesde = 0;
-  if (serialListo) Serial.println("[SOL] OFF (resorte sube el sensor)");
+  if (serialListo) Serial.println("[SOL] OFF (el resorte suelta el embolo)");
 }
 
 void solenoidEmergencia() { solenoidOFF(); }
@@ -318,34 +265,23 @@ void enviarAMaestro(const char *comando, int parametro) {
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// INICIO DEL CICLO DE MEDICIÓN
+// INICIO DEL CICLO (disparo + medición, o solo disparo de prueba)
 // ─────────────────────────────────────────────────────────────────────
-void iniciarMedicion() {
+void iniciarCiclo(bool solo) {
   if (estadoActual != EB_REPOSO) {
-    Serial.println("[ESP_B] MEDIR ignorado: ocupado o en emergencia.");
+    Serial.println("[ESP_B] Ocupado o en emergencia: orden ignorada.");
     return;
   }
+  soloDisparo      = solo;
+  cantidadMuestras = 0;
+  estadoActual     = EB_ARMANDO;
+  tiempoInicioEtapa = millis();
+  solenoidON();   // recoge el émbolo y carga el resorte
 
-  // Recorta la ventana de muestreo si la suma pasaría el tope de seguridad
-  unsigned long fijos = tiempoInsercionMs + tiempoEstabilizarMs;
-  muestreoEfectivoMs = tiempoMuestreoMs;
-  if (fijos + muestreoEfectivoMs + 500UL > TIEMPO_ON_MAX_MS) {
-    muestreoEfectivoMs = (TIEMPO_ON_MAX_MS > fijos + 1000UL) ? (TIEMPO_ON_MAX_MS - fijos - 500UL) : 500UL;
-    Serial.printf("[ESP_B] AVISO: ventana de muestreo recortada a %lu ms por el tope de %lu ms.\n",
-                  muestreoEfectivoMs, TIEMPO_ON_MAX_MS);
-  }
-
-  cantidadMuestras    = 0;
-  ultimaMuestraMillis = 0;
-  estadoActual        = EB_INSERTANDO;
-  tiempoInicioEtapa   = millis();
-
-  alimentarSensor(true);
-  solenoidON();
-
-  Serial.printf("[ESP_B] MEDIR iniciado. Tiempos: ins=%lu est=%lu med=%lu ret=%lu | ON total ~%lu ms\n",
-                tiempoInsercionMs, tiempoEstabilizarMs, muestreoEfectivoMs, tiempoRetraccionMs,
-                fijos + muestreoEfectivoMs);
+  Serial.printf("[ESP_B] %s: arm=%lu ins=%lu est=%lu med=%lu ret=%lu ms\n",
+                solo ? "DISPARO DE PRUEBA" : "MEDIR iniciado",
+                tiempoArmadoMs, tiempoInsercionMs, tiempoEstabilizarMs,
+                tiempoMuestreoMs, tiempoRetraccionMs);
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -396,33 +332,40 @@ void ejecutarComando(const ComandoRx &c) {
   }
 
   if (strcmp(c.cmd, "MEDIR") == 0) {
-    iniciarMedicion();
+    iniciarCiclo(false);
+  }
+  else if (strcmp(c.cmd, "SOL_ARM") == 0) {
+    if (c.param >= 100 && c.param <= 1500) {
+      tiempoArmadoMs = (unsigned long)c.param;
+      guardarTiempos();
+      Serial.printf("[SOL] tiempoArmadoMs=%lu ms\n", tiempoArmadoMs);
+    }
   }
   else if (strcmp(c.cmd, "SOL_INS") == 0) {
     if (c.param >= 100 && c.param <= 3000) {
       tiempoInsercionMs = (unsigned long)c.param;
-      guardarTiemposSolenoide();
+      guardarTiempos();
       Serial.printf("[SOL] tiempoInsercionMs=%lu ms\n", tiempoInsercionMs);
     }
   }
   else if (strcmp(c.cmd, "SOL_EST") == 0) {
     if (c.param >= 100 && c.param <= 5000) {
       tiempoEstabilizarMs = (unsigned long)c.param;
-      guardarTiemposSolenoide();
+      guardarTiempos();
       Serial.printf("[SOL] tiempoEstabilizarMs=%lu ms\n", tiempoEstabilizarMs);
     }
   }
   else if (strcmp(c.cmd, "SOL_MED") == 0) {
     if (c.param >= 500 && c.param <= 8000) {
       tiempoMuestreoMs = (unsigned long)c.param;
-      guardarTiemposSolenoide();
+      guardarTiempos();
       Serial.printf("[SOL] tiempoMuestreoMs=%lu ms\n", tiempoMuestreoMs);
     }
   }
   else if (strcmp(c.cmd, "SOL_RET") == 0) {
     if (c.param >= 100 && c.param <= 3000) {
       tiempoRetraccionMs = (unsigned long)c.param;
-      guardarTiemposSolenoide();
+      guardarTiempos();
       Serial.printf("[SOL] tiempoRetraccionMs=%lu ms\n", tiempoRetraccionMs);
     }
   }
@@ -461,27 +404,22 @@ void OnDataRecv(const esp_now_recv_info *info, const uint8_t *incomingData, int 
 
 // ─────────────────────────────────────────────────────────────────────
 // SERIAL: prueba de banco sin Maestro
-//   p = pulso de prueba   + / - = alarga / acorta el pulso (0.5 s)
-//   m = ciclo completo    s = stop     r = reset
 // ─────────────────────────────────────────────────────────────────────
 void atenderSerial() {
   while (Serial.available()) {
     char ch = (char)Serial.read();
     if (ch == 'm' || ch == 'M') {
-      iniciarMedicion();
+      iniciarCiclo(false);
     } else if (ch == 'p' || ch == 'P') {
-      if (estadoActual != EB_REPOSO) { Serial.println("[PRUEBA] Ocupado."); continue; }
-      estadoActual      = EB_PRUEBA;
-      tiempoInicioEtapa = millis();
-      Serial.printf("[PRUEBA] Pulso de %lu ms: observa qué extremo del émbolo SALE y cuánto.\n",
-                    pulsoPruebaMs);
-      solenoidON();
+      iniciarCiclo(true);
     } else if (ch == '+') {
-      if (pulsoPruebaMs + 500UL <= 6000UL) pulsoPruebaMs += 500UL;
-      Serial.printf("[PRUEBA] Pulso de prueba = %lu ms\n", pulsoPruebaMs);
+      if (tiempoArmadoMs + 50UL <= 1500UL) tiempoArmadoMs += 50UL;
+      guardarTiempos();
+      Serial.printf("[PRUEBA] Tiempo de armado = %lu ms\n", tiempoArmadoMs);
     } else if (ch == '-') {
-      if (pulsoPruebaMs >= 1000UL) pulsoPruebaMs -= 500UL;
-      Serial.printf("[PRUEBA] Pulso de prueba = %lu ms\n", pulsoPruebaMs);
+      if (tiempoArmadoMs >= 150UL) tiempoArmadoMs -= 50UL;
+      guardarTiempos();
+      Serial.printf("[PRUEBA] Tiempo de armado = %lu ms\n", tiempoArmadoMs);
     } else if (ch == 's' || ch == 'S') {
       ejecutarEmergencia();
     } else if (ch == 'r' || ch == 'R') {
@@ -512,8 +450,7 @@ const char* motivoReset() {
 // SETUP
 // ─────────────────────────────────────────────────────────────────────
 void setup() {
-  // Solenoide apagado antes que nada (pin suelto = relé suelto). Sin prints aún.
-  solenoidOFF();
+  solenoidOFF();   // apagado antes que nada, sin prints aún
 
 #if PIN_SENSOR_ALIM >= 0
   pinMode(PIN_SENSOR_ALIM, OUTPUT);
@@ -523,17 +460,20 @@ void setup() {
   Serial.begin(115200);
   serialListo = true;
   delay(200);
-  Serial.println("\n[FertiTrack v5.8] Iniciando ESP_B (sensor + solenoide en PULSO)...");
+  Serial.println("\n[FertiTrack v5.9] Iniciando ESP_B (ciclo de DISPARO)...");
   Serial.printf("  Motivo del ultimo reinicio: %s\n", motivoReset());
-  Serial.println("  Prueba de banco: p=pulso  +/-=duracion  m=medir  s=stop  r=reset");
+  Serial.println("  Prueba de banco: p=solo disparo  +/-=armado  m=medir  s=stop  r=reset");
 
   prefs.begin("espb", false);
-  cargarTiemposSolenoide();
+  cargarTiempos();
 
-  Serial.printf("  Tiempos: ins=%lu est=%lu med=%lu ret=%lu ms | ON/ciclo ~%lu ms (tope %lu)\n",
-                tiempoInsercionMs, tiempoEstabilizarMs, tiempoMuestreoMs, tiempoRetraccionMs,
-                tiempoInsercionMs + tiempoEstabilizarMs + tiempoMuestreoMs, TIEMPO_ON_MAX_MS);
-  Serial.printf("  Pulso de prueba: %lu ms\n", pulsoPruebaMs);
+  Serial.printf("  Tiempos: arm=%lu ins=%lu est=%lu med=%lu ret=%lu ms\n",
+                tiempoArmadoMs, tiempoInsercionMs, tiempoEstabilizarMs,
+                tiempoMuestreoMs, tiempoRetraccionMs);
+  Serial.printf("  Solenoide ON por ciclo: ~%lu ms | Driver: %s | Extraer al final: %s\n",
+                tiempoArmadoMs + (EXTRAER_AL_FINAL ? tiempoRetraccionMs : 0UL),
+                DRIVER_MOSFET ? "MOSFET" : "RELE",
+                EXTRAER_AL_FINAL ? "si" : "no");
 
   analogReadResolution(12);
   analogSetAttenuation(ADC_11db);
@@ -559,16 +499,16 @@ void setup() {
   if (esp_now_add_peer(&peerInfo) != ESP_OK)
     Serial.println("  ERROR registrando al Maestro como peer");
 
-  Serial.println("  ESP_B v5.8 listo. Solenoide APAGADO. Esperando MEDIR.\n");
+  Serial.println("  ESP_B v5.9 listo. Solenoide APAGADO. Esperando MEDIR.\n");
 }
 
 // ─────────────────────────────────────────────────────────────────────
 // LOOP — máquina de estados no bloqueante
 // ─────────────────────────────────────────────────────────────────────
 void loop() {
-  // 0) Vigilante: el relé nunca puede quedar ON más del tope
+  // 0) Vigilante: ninguna fase con solenoide ON puede pasar del tope
   if (relePrendidoDesde != 0 && millis() - relePrendidoDesde > TIEMPO_ON_MAX_MS) {
-    Serial.println("[ESP_B] VIGILANTE: relé ON demasiado tiempo. Apagando.");
+    Serial.println("[ESP_B] VIGILANTE: solenoide ON demasiado tiempo. Apagando.");
     ejecutarEmergencia();
     return;
   }
@@ -595,16 +535,33 @@ void loop() {
     case EB_REPOSO:
       break;
 
-    case EB_INSERTANDO:
-      if (ahora - tiempoInicioEtapa >= tiempoInsercionMs) {
-        tiempoInicioEtapa   = ahora;
-        ultimaMuestraMillis = ahora;
-        estadoActual        = EB_MIDIENDO;
-        Serial.printf("[ESP_B] Sensor en la tierra. Midiendo por %lu ms...\n",
-                      tiempoEstabilizarMs + muestreoEfectivoMs);
+    // ── 1) ARMAR: el émbolo se recoge y carga el resorte ────────────
+    case EB_ARMANDO:
+      if (ahora - tiempoInicioEtapa >= tiempoArmadoMs) {
+        solenoidOFF();                       // ¡DISPARO! el resorte clava el sensor
+        if (!soloDisparo) alimentarSensor(true);   // el sensor se activa ahora
+        tiempoInicioEtapa = ahora;
+        estadoActual      = EB_DISPARANDO;
       }
       break;
 
+    // ── 2) DISPARAR: esperar a que el sensor quede enterrado ────────
+    case EB_DISPARANDO:
+      if (ahora - tiempoInicioEtapa >= tiempoInsercionMs) {
+        if (soloDisparo) {
+          estadoActual = EB_REPOSO;
+          Serial.println("[PRUEBA] Disparo terminado. Solenoide apagado.");
+        } else {
+          tiempoInicioEtapa   = ahora;
+          ultimaMuestraMillis = ahora;
+          estadoActual        = EB_MIDIENDO;
+          Serial.printf("[ESP_B] Sensor enterrado. Midiendo por %lu ms...\n",
+                        tiempoEstabilizarMs + tiempoMuestreoMs);
+        }
+      }
+      break;
+
+    // ── 3) MEDIR con el solenoide OFF (bobina fría) ─────────────────
     case EB_MIDIENDO: {
       unsigned long elapsed = ahora - tiempoInicioEtapa;
 
@@ -615,11 +572,8 @@ void loop() {
         ultimaMuestraMillis = ahora;
       }
 
-      if (elapsed >= tiempoEstabilizarMs + muestreoEfectivoMs) {
-        solenoidOFF();            // fin del pulso: el resorte sube el sensor
+      if (elapsed >= tiempoEstabilizarMs + tiempoMuestreoMs) {
         alimentarSensor(false);
-        tiempoInicioEtapa = ahora;
-        estadoActual      = EB_RETRACTANDO;
 
         int mn, mx;
         ultimaLecturaPromedio = promedioRecortado(cantidadMuestras, mn, mx);
@@ -627,25 +581,29 @@ void loop() {
                       cantidadMuestras, ultimaLecturaPromedio, mn, mx, mx - mn);
         if (mx - mn > 800)
           Serial.println("  AVISO: rango alto (>800). Revisa el contacto del sensor con el suelo.");
-        Serial.printf("[ESP_B] Retractando (%lu ms)...\n", tiempoRetraccionMs);
+
+#if EXTRAER_AL_FINAL
+        tiempoInicioEtapa = ahora;
+        estadoActual      = EB_EXTRAYENDO;
+        solenoidON();                        // recoge el émbolo: saca el sensor
+        Serial.printf("[ESP_B] Extrayendo sensor (%lu ms)...\n", tiempoRetraccionMs);
+#else
+        estadoActual = EB_REPOSO;
+        Serial.printf("[ESP_B] Enviando HUMEDAD=%d al Maestro.\n", ultimaLecturaPromedio);
+        enviarAMaestro("HUMEDAD", (ultimaLecturaPromedio > 0) ? ultimaLecturaPromedio : 0);
+#endif
       }
       break;
     }
 
-    case EB_RETRACTANDO:
+    // ── 4) EXTRAER y enviar el resultado ────────────────────────────
+    case EB_EXTRAYENDO:
       if (ahora - tiempoInicioEtapa >= tiempoRetraccionMs) {
-        estadoActual = EB_REPOSO;
-        Serial.printf("[ESP_B] Sensor arriba. Enviando HUMEDAD=%d al Maestro.\n",
-                      ultimaLecturaPromedio);
-        enviarAMaestro("HUMEDAD", (ultimaLecturaPromedio > 0) ? ultimaLecturaPromedio : 0);
-      }
-      break;
-
-    case EB_PRUEBA:
-      if (ahora - tiempoInicioEtapa >= pulsoPruebaMs) {
         solenoidOFF();
         estadoActual = EB_REPOSO;
-        Serial.println("[PRUEBA] Fin del pulso. Solenoide apagado.");
+        Serial.printf("[ESP_B] Ciclo completo. Enviando HUMEDAD=%d al Maestro.\n",
+                      ultimaLecturaPromedio);
+        enviarAMaestro("HUMEDAD", (ultimaLecturaPromedio > 0) ? ultimaLecturaPromedio : 0);
       }
       break;
 
